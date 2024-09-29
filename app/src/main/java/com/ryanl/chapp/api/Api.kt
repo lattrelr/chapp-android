@@ -17,4 +17,8 @@ object Api {
         val myList = Json.decodeFromString<List<User>>(jsonData)
         return myList
     }
+
+    fun getMessages() {
+
+    }
 }
