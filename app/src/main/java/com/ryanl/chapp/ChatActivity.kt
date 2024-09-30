@@ -1,5 +1,6 @@
 package com.ryanl.chapp
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,8 @@ import com.ryanl.chapp.ui.theme.ChappAndroidTheme
 class ChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val displayName = intent.getStringExtra("displayName")
+        val userId = intent.getStringExtra("id")
         setContent {
             ChappAndroidTheme {
                 Scaffold (
@@ -26,7 +29,7 @@ class ChatActivity : ComponentActivity() {
                     Box(modifier = Modifier
                         .padding(innerPadding)
                         .fillMaxSize()) {
-                        ChatScreen()
+                        ChatScreen(userId, displayName)
                     }
                 }
             }

@@ -1,6 +1,7 @@
 package com.ryanl.chapp.ui
 
 import android.app.Activity
+import android.text.Layout
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -31,36 +35,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ryanl.chapp.models.Message
 
 private const val TAG = "ChatScreen"
 
+// TODO does recompose keep parameters?
 @Composable
-fun ChatScreen(chatViewModel: ChatViewModel = viewModel()) {
-    // TODO how to get intent to/from viewModel properly...
-    // maybe launched effect, on created?
-    val context = LocalContext.current
-    var username: String? = "No name"
-    var userId: String? = "No ID"
-    try {
-        val intent = (context as Activity).intent
-        username = intent.getStringExtra("displayName")
-        userId = intent.getStringExtra("id")
-    } catch (e: Exception) {
-
-    }
-
+fun ChatScreen(
+    toUserId: String?,
+    toDisplayName: String?,
+    chatViewModel: ChatViewModel = viewModel()
+) {
+    chatViewModel.fetchHistory(toUserId)
     Column {
-        ChatHeader(username)
-        ChatHistory()
-        ChatSend(chatViewModel, userId)
+        ChatHeader(toDisplayName)
+        ChatHistory(chatViewModel)
+        ChatSend(chatViewModel, toUserId)
     }
 }
 
 @Composable
-fun ChatHeader(username: String?) {
+fun ChatHeader(toDisplayName: String?) {
     Column (
         modifier = Modifier
             .fillMaxWidth()
@@ -74,23 +73,44 @@ fun ChatHeader(username: String?) {
             contentDescription = "User picture",
             modifier = Modifier.size(40.dp)
         )
-        Text(text = "$username")
+        Text(text = "$toDisplayName")
     }
 }
 
 @Composable
-fun ChatHistory() {
-    Column (
+fun ChatHistory(chatViewModel: ChatViewModel = viewModel()) {
+    LazyColumn (
         modifier = Modifier
             .fillMaxHeight(0.9F)
             .fillMaxWidth()
     ) {
-
+        items(chatViewModel.messageHistory) { msg ->
+            MessageBubble(msg)
+        }
     }
 }
 
 @Composable
-fun ChatSend(chatViewModel: ChatViewModel = viewModel(), userId: String?) {
+fun MessageBubble(message: Message) {
+    val myUserId = StoredAppPrefs.getUserId()
+    Card() {
+        if (message.from == myUserId) {
+            Text(
+                text = message.text,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .fillMaxWidth(),
+            )
+        } else {
+            Text(
+                text = message.text
+            )
+        }
+    }
+}
+
+@Composable
+fun ChatSend(chatViewModel: ChatViewModel = viewModel(), toUserId: String?) {
     Row (
         modifier = Modifier
             .fillMaxSize()
@@ -104,7 +124,7 @@ fun ChatSend(chatViewModel: ChatViewModel = viewModel(), userId: String?) {
             onValueChange = { chatViewModel.updateMessage(it) },
             modifier = Modifier.fillMaxWidth(0.85F)
         )
-        IconButton(onClick = { chatViewModel.sendMessage(userId) }) {
+        IconButton(onClick = { chatViewModel.sendMessage(toUserId) }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Default.Send,
                 contentDescription = "User picture",
@@ -123,7 +143,7 @@ fun ChatPreview() {
         Box(modifier = Modifier
             .padding(innerPadding)
             .fillMaxSize()) {
-            ChatScreen()
+            ChatScreen("1", "Bob")
         }
     }
 }

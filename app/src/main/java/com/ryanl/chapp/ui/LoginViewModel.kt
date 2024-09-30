@@ -19,6 +19,10 @@ class LoginViewModel : ViewModel() {
         WebsocketClient.start()
         Log.d(TAG, "doLogin: $username, $password - state is $loggedInState")
         loggedInState = true
+
+        // TODO cache token and user id (which we should return with login JSON) in sharedprefs.
+        StoredAppPrefs.setToken("AAAA")
+        StoredAppPrefs.setUserId("0")
     }
 
     fun reset() {
