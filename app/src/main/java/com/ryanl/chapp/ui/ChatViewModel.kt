@@ -22,7 +22,7 @@ class ChatViewModel() : ViewModel() {
 
     fun fetchHistory(toUserId: String?) {
         // TODO keep this part sync.
-        messageHistory.clear()
+        //messageHistory.clear()
         // TODO run this part in a coroutine
         // TODO get what you can from DB, then request IDs past what is in the DB from server.
         // TODO update backend to support this.

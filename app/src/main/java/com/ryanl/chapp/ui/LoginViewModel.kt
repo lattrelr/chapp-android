@@ -15,7 +15,6 @@ class LoginViewModel : ViewModel() {
 
     // TODO this should be in a coroutine
     fun doLogin(username: String, password: String) {
-        // TODO websocket start shouldn't be here.
         WebsocketClient.start()
         Log.d(TAG, "doLogin: $username, $password - state is $loggedInState")
         loggedInState = true

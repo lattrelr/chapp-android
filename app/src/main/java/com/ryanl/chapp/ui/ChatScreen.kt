@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -21,6 +24,8 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -93,17 +98,24 @@ fun ChatHistory(chatViewModel: ChatViewModel = viewModel()) {
 @Composable
 fun MessageBubble(message: Message) {
     val myUserId = StoredAppPrefs.getUserId()
-    Card() {
-        if (message.from == myUserId) {
+    Column (
+        modifier = Modifier
+            .fillMaxWidth(),
+    ) {
+        Card(
+            modifier = (if (message.from == myUserId)
+                Modifier.align(Alignment.End) else
+                Modifier.align(Alignment.Start))
+                .padding(5.dp),
+            colors = if (message.from == myUserId)
+                CardDefaults.cardColors(Color.Green) else
+                CardDefaults.cardColors(Color.Gray)
+        ) {
             Text(
                 text = message.text,
-                textAlign = TextAlign.End,
                 modifier = Modifier
-                    .fillMaxWidth(),
-            )
-        } else {
-            Text(
-                text = message.text
+                    .widthIn(0.dp, 300.dp)
+                    .padding(10.dp)
             )
         }
     }
