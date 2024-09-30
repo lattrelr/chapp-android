@@ -20,6 +20,7 @@ class ChatViewModel() : ViewModel() {
     var messageHistory = mutableStateListOf<Message>()
         private set
 
+    // TODO can this be init? Or will navigating to this view trigger dupes/wrong messages.
     fun fetchHistory(toUserId: String?) {
         // TODO keep this part sync.
         //messageHistory.clear()
