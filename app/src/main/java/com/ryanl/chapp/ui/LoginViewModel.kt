@@ -5,7 +5,12 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewModelScope
+import com.ryanl.chapp.api.Api
+import com.ryanl.chapp.models.ResponseLogin
 import com.ryanl.chapp.socket.WebsocketClient
+import kotlinx.coroutines.launch
 
 private const val TAG = "LoginViewModel"
 
@@ -13,15 +18,24 @@ class LoginViewModel : ViewModel() {
     var loggedInState by mutableStateOf(false)
         private set
 
-    // TODO this should be in a coroutine
     fun doLogin(username: String, password: String) {
-        WebsocketClient.start()
         Log.d(TAG, "doLogin: $username, $password - state is $loggedInState")
-        loggedInState = true
-
-        // TODO cache token and user id (which we should return with login JSON) in sharedprefs.
-        StoredAppPrefs.setToken("AAAA")
-        StoredAppPrefs.setUserId("0")
+        // TODO clean this up, exception shouldn't be for all calls...
+        viewModelScope.launch {
+            try {
+                val response = Api.login(username, password)
+                Log.d(TAG, "Login response: $response")
+                // TODO These don't work
+                StoredAppPrefs.setToken(response.token)
+                StoredAppPrefs.setUserId(response.userId)
+                loggedInState = true
+                // TODO start the socket now that we have a valid token
+                WebsocketClient.start()
+            } catch (e: Exception) {
+                // TODO we don't want to catch the cancellationException, be specific
+                Log.e(TAG, "Get Users FAILED - ${e.message}")
+            }
+        }
     }
 
     fun reset() {

@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +41,10 @@ private const val TAG = "UsersScreen"
 
 @Composable
 fun UsersScreen(usersViewModel: UsersViewModel = viewModel()) {
+    LaunchedEffect(Unit) {
+        usersViewModel.fetchUsers()
+    }
+
     LazyColumn (
       /*modifier = Modifier
           .fillMaxWidth()
@@ -66,9 +71,9 @@ fun UserRow(user: User) {
             //.fillMaxHeight()
             .padding(2.dp),
         onClick = {
-            Log.d(TAG, "clicked ${user.displayName}")
+            Log.d(TAG, "clicked ${user.displayname}")
             val intent = Intent(context, ChatActivity::class.java)
-            intent.putExtra("displayName", user.displayName)
+            intent.putExtra("displayName", user.displayname)
             intent.putExtra("id", user.id)
             context.startActivity(intent)
         }
@@ -80,7 +85,7 @@ fun UserRow(user: User) {
                 modifier = Modifier.size(60.dp)
             )
             Text(
-                text = user.displayName,
+                text = user.displayname,
                 modifier = Modifier
                     //.fillMaxWidth()
                     .padding(16.dp),

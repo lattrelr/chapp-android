@@ -1,11 +1,44 @@
 package com.ryanl.chapp.api
 
+import android.util.Log
+import com.ryanl.chapp.models.Login
 import com.ryanl.chapp.models.Message
+import com.ryanl.chapp.models.ResponseLogin
 import com.ryanl.chapp.models.User
 import kotlinx.serialization.json.Json
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 
 object Api {
-    fun getUsers(): List<User> {
+    private const val TAG = "Api"
+    private const val BASE_URL = "http://10.0.2.2:30000/api/"
+
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(MoshiConverterFactory.create())
+            .build()
+    }
+
+    private val usersService: UsersService by lazy {
+        retrofit.create(UsersService::class.java)
+    }
+
+    private val sessionsService: SessionsService by lazy {
+        retrofit.create(SessionsService::class.java)
+    }
+
+    suspend fun login(username: String, password: String): ResponseLogin {
+        Log.d(TAG, "Logging in...")
+        return sessionsService.login(Login(username, password))
+    }
+
+    suspend fun getUsers(): List<User> {
+        Log.d(TAG, "Getting users...")
+        return usersService.getUsers()
+    }
+
+    /*fun getUsers(): List<User> {
         val jsonData = """
           [
             {"id": "0", "displayName": "ryan"},
@@ -17,7 +50,7 @@ object Api {
         """.trimIndent()
         val myList = Json.decodeFromString<List<User>>(jsonData)
         return myList
-    }
+    }*/
 
     fun getConversation(user1: String, user2: String): List<Message> {
         val jsonData = """

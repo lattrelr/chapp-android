@@ -37,8 +37,8 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
     // val lifecycleOwner = LocalLifecycleOwner.current
     // val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
     val context = LocalContext.current
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("ryanl") }
+    var password by remember { mutableStateOf("password") }
 
     /*DisposableEffect (lifecycleState) {
         // lifecycleState == Lifecycle.State.RESUMED
