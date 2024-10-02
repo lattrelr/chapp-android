@@ -40,6 +40,10 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
     var username by remember { mutableStateOf("ryanl") }
     var password by remember { mutableStateOf("password") }
 
+    LaunchedEffect(Unit) {
+        loginViewModel.checkForActiveSession()
+    }
+
     /*DisposableEffect (lifecycleState) {
         // lifecycleState == Lifecycle.State.RESUMED
         onDispose {
@@ -86,8 +90,6 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
         }
     }
 
-    // Check for active token
-    loginViewModel.check()
     // If logged in, lets move to the next screen
     if (loginViewModel.loggedInState) {
         // TODO this be ugly

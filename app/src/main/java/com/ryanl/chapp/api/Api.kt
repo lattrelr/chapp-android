@@ -3,15 +3,18 @@ package com.ryanl.chapp.api
 import android.util.Log
 import com.ryanl.chapp.models.Login
 import com.ryanl.chapp.models.Message
+import com.ryanl.chapp.models.ResponseActive
 import com.ryanl.chapp.models.ResponseLogin
 import com.ryanl.chapp.models.User
 import kotlinx.serialization.json.Json
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 object Api {
     private const val TAG = "Api"
     private const val BASE_URL = "http://10.0.2.2:30000/api/"
+    //private const val BASE_URL = "http://webserver.local:3000/api/"
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
@@ -29,11 +32,22 @@ object Api {
     }
 
     suspend fun login(username: String, password: String): ResponseLogin {
+        // TODO check if response isSuccessful ?
         Log.d(TAG, "Logging in...")
         return sessionsService.login(Login(username, password))
     }
 
+    suspend fun checkForActiveSession(token: String): ResponseActive? {
+        Log.d(TAG, "Check session...")
+        val resp = sessionsService.active("Bearer $token")
+        if (resp.isSuccessful) {
+            return resp.body()
+        }
+        return null
+    }
+
     suspend fun getUsers(): List<User> {
+        // TODO check if response isSuccessful ?
         Log.d(TAG, "Getting users...")
         return usersService.getUsers()
     }

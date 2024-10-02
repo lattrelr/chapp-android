@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.api.Api
+import com.ryanl.chapp.models.ResponseActive
 import com.ryanl.chapp.models.ResponseLogin
 import com.ryanl.chapp.socket.WebsocketClient
 import kotlinx.coroutines.launch
@@ -42,9 +43,22 @@ class LoginViewModel : ViewModel() {
         loggedInState = false
     }
 
-    fun check() {
-        // TODO
-        // check for valid token, set loggedInState if we are good
-        // or delete token if we aren't
+    fun checkForActiveSession() {
+        viewModelScope.launch {
+            var session: ResponseActive? = null
+            try {
+                session = Api.checkForActiveSession(StoredAppPrefs.getToken())
+            } catch (e: Exception) {
+                Log.e(TAG, "Get session FAILED - ${e.message}")
+            }
+            session?.let {
+                if (session.userId == StoredAppPrefs.getUserId()) {
+                    Log.d(TAG, "checkForActiveSession: Session is valid for $session.userId")
+                    loggedInState = true
+                    // TODO start the socket if we have a valid token
+                    WebsocketClient.start()
+                }
+            }
+        }
     }
 }
