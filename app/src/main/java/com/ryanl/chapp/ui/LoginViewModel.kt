@@ -11,6 +11,8 @@ import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.models.ResponseActive
 import com.ryanl.chapp.models.ResponseLogin
 import com.ryanl.chapp.socket.WebsocketClient
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val TAG = "LoginViewModel"
@@ -18,6 +20,7 @@ private const val TAG = "LoginViewModel"
 class LoginViewModel : ViewModel() {
     var loggedInState by mutableStateOf(false)
         private set
+    private var wsJob: Job? = null
 
     fun doLogin(username: String, password: String) {
         Log.d(TAG, "doLogin: $username, $password - state is $loggedInState")
@@ -26,17 +29,29 @@ class LoginViewModel : ViewModel() {
             try {
                 val response = Api.login(username, password)
                 Log.d(TAG, "Login response: $response")
-                // TODO These don't work
+                // Store token and userId for later
                 StoredAppPrefs.setToken(response.token)
                 StoredAppPrefs.setUserId(response.userId)
+                // Trigger the UI to move to the next activity
                 loggedInState = true
-                // TODO start the socket now that we have a valid token
-                WebsocketClient.start()
+                // Start the socket now that we have a valid token
+                wsJob?.cancel()
+                wsJob = viewModelScope.launch {
+                    WebsocketClient.connect(response.token)
+                }
+                //WebsocketClient.sendTextMessage("MMMMMM", response.userId)
             } catch (e: Exception) {
                 // TODO we don't want to catch the cancellationException, be specific
                 Log.e(TAG, "Get Users FAILED - ${e.message}")
             }
         }
+    }
+
+    // TODO this logic is broken
+    fun logout() {
+        Log.e(TAG, "Logging out...")
+        wsJob?.cancel()
+        //loggedInState = false
     }
 
     fun reset() {
@@ -55,8 +70,12 @@ class LoginViewModel : ViewModel() {
                 if (session.userId == StoredAppPrefs.getUserId()) {
                     Log.d(TAG, "checkForActiveSession: Session is valid for $session.userId")
                     loggedInState = true
-                    // TODO start the socket if we have a valid token
-                    WebsocketClient.start()
+                    wsJob?.cancel()
+                    wsJob = viewModelScope.launch {
+                        WebsocketClient.connect(StoredAppPrefs.getToken())
+                    }
+                    Log.d(TAG, "checkForActiveSession: DONE")
+                    //WebsocketClient.sendTextMessage("MMMMMM", StoredAppPrefs.getUserId())
                 }
             }
         }

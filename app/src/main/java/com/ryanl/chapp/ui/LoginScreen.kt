@@ -26,9 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ryanl.chapp.UsersActivity
+import kotlinx.coroutines.delay
 
 private const val tag = "LoginScreen"
 
@@ -40,22 +42,22 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
     var username by remember { mutableStateOf("ryanl") }
     var password by remember { mutableStateOf("password") }
 
+    // TODO this logic is broken
+
+    // On initial app launch check if our token is valid and skip the login
     LaunchedEffect(Unit) {
+        Log.d(tag, "Launched!")
         loginViewModel.checkForActiveSession()
     }
 
-    /*DisposableEffect (lifecycleState) {
-        // lifecycleState == Lifecycle.State.RESUMED
-        onDispose {
-            if (lifecycleState == Lifecycle.State.RESUMED)
-                loginViewModel.reset()
-            Log.d(tag, "State is $lifecycleState")
-        }
-    }*/
+    // Every time we come to the foreground, we should kill the old websocket connection.
+    LifecycleStartEffect(Unit) {
+        Log.d(tag, "Started!")
+        loginViewModel.logout()
+        onStopOrDispose {
 
-    // Printing this causes recomposition on lifecycle state
-    // changes, which causes us to do bad things.
-    // Log.d(tag, "State is $lifecycleState")
+        }
+    }
 
     Column (
         modifier = Modifier.fillMaxSize(),
@@ -92,10 +94,8 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
 
     // If logged in, lets move to the next screen
     if (loginViewModel.loggedInState) {
-        // TODO this be ugly
-        // Make sure we start next recompose with false
-        // so we don't launch again.
         loginViewModel.reset()
+        Log.d(tag, "Login done!")
         username = ""
         password = ""
 
