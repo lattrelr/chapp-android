@@ -42,21 +42,18 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
     var username by remember { mutableStateOf("ryanl") }
     var password by remember { mutableStateOf("password") }
 
-    // TODO this logic is broken
-
-    // On initial app launch check if our token is valid and skip the login
-    LaunchedEffect(Unit) {
-        Log.d(tag, "Launched!")
-        loginViewModel.checkForActiveSession()
-    }
-
     // Every time we come to the foreground, we should kill the old websocket connection.
     LifecycleStartEffect(Unit) {
         Log.d(tag, "Started!")
         loginViewModel.logout()
         onStopOrDispose {
-
         }
+    }
+
+    // On initial app launch check if our token is valid and skip the login
+    LaunchedEffect(Unit) {
+        Log.d(tag, "Launched!")
+        loginViewModel.checkForActiveSession()
     }
 
     Column (
@@ -91,6 +88,8 @@ fun LoginScreen(loginViewModel: LoginViewModel = viewModel()) {
             Text(text = "Login")
         }
     }
+
+    // TODO this logic is ugly, try uiState flow?
 
     // If logged in, lets move to the next screen
     if (loginViewModel.loggedInState) {

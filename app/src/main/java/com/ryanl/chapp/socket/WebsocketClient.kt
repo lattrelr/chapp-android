@@ -25,9 +25,6 @@ object WebsocketClient {
     private var session: DefaultClientWebSocketSession? = null
 
     suspend fun connect(token: String) {
-        // Just in case we were open
-        //close()
-
         Log.d(TAG, "Websocket starting...")
         session = client.webSocketSession (
             method = HttpMethod.Get,
@@ -42,15 +39,14 @@ object WebsocketClient {
             }
         } catch(e: Exception) {
             Log.e(TAG, "Websocket rx closed")
-            session?.incoming?.cancel()
+            session?.close()
         }
 
         Log.d(TAG, "Websocket done!")
     }
 
-    // TODO cancel / close is not working right.
-
     /*fun close() {
+        // Not sure what this does, close() seems to work.
         session?.incoming?.cancel()
         Log.e(TAG, "Websocket closed!")
     }*/

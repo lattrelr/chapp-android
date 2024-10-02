@@ -12,6 +12,7 @@ import com.ryanl.chapp.models.ResponseActive
 import com.ryanl.chapp.models.ResponseLogin
 import com.ryanl.chapp.socket.WebsocketClient
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -35,7 +36,7 @@ class LoginViewModel : ViewModel() {
                 // Trigger the UI to move to the next activity
                 loggedInState = true
                 // Start the socket now that we have a valid token
-                wsJob?.cancel()
+                wsJob?.cancelAndJoin()
                 wsJob = viewModelScope.launch {
                     WebsocketClient.connect(response.token)
                 }
@@ -47,11 +48,11 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    // TODO this logic is broken
+    // TODO this logic is ugly
     fun logout() {
         Log.e(TAG, "Logging out...")
         wsJob?.cancel()
-        //loggedInState = false
+        loggedInState = false
     }
 
     fun reset() {
@@ -70,7 +71,7 @@ class LoginViewModel : ViewModel() {
                 if (session.userId == StoredAppPrefs.getUserId()) {
                     Log.d(TAG, "checkForActiveSession: Session is valid for $session.userId")
                     loggedInState = true
-                    wsJob?.cancel()
+                    wsJob?.cancelAndJoin()
                     wsJob = viewModelScope.launch {
                         WebsocketClient.connect(StoredAppPrefs.getToken())
                     }
