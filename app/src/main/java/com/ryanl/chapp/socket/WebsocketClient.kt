@@ -35,7 +35,6 @@ object WebsocketClient {
     }
     private var session: DefaultClientWebSocketSession? = null
 
-    // TODO handle server restart closing the socket.
     suspend fun runForever(token: String) {
         try {
             while (true) {
@@ -81,7 +80,6 @@ object WebsocketClient {
             }
         }
         Log.e(TAG, "Exiting rx loop. Server offline?")
-
     }
 
     private suspend fun handleDataMessage(textFrame: Frame.Text) {
