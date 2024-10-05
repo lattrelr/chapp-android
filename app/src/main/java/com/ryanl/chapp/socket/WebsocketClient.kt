@@ -1,6 +1,7 @@
 package com.ryanl.chapp.socket
 
 import android.util.Log
+import com.ryanl.chapp.socket.models.Message
 import com.ryanl.chapp.socket.models.TextMessage
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -33,7 +34,7 @@ object WebsocketClient {
     // TODO handle server restart closing the socket.
 
     suspend fun connect(token: String) {
-        Log.d(TAG, "Websocket starting...")
+        Log.d(TAG, "Starting...")
         session = client.webSocketSession (
             method = HttpMethod.Get,
             host = SERVER_NAME,
@@ -43,22 +44,26 @@ object WebsocketClient {
 
         try {
             session?.incoming?.receiveAsFlow()?.collect() {
-                Log.d(TAG, "Websocket data rxed")
+                Log.d(TAG, "Data rxed")
                 if (it is Frame.Text && it.fin) {
-                    Log.d(TAG, "Websocket message rxed")
                     try {
-                        sendToSubscribers(it)
+                        val msg = Json.decodeFromString<Message>(it.readText())
+                        when (msg.type) {
+                            "text" -> sendToSubscribers(msg as TextMessage)
+                            "status" -> { Log.d(TAG, "$msg") }
+                        }
                     } catch (e: SerializationException) {
                         Log.e(TAG, "Message issue $e")
                     }
                 }
             }
         } catch(e: Exception) {
-            Log.e(TAG, "Websocket rx closed - $e ${e.message}")
+            // TODO Handle websocket Exception vs Coroutine exception!
+            Log.e(TAG, "Rx closed - $e ${e.message}")
             session?.close()
         }
 
-        Log.d(TAG, "Websocket done!")
+        Log.d(TAG, "Done!")
     }
 
     /*fun close() {
@@ -76,7 +81,7 @@ object WebsocketClient {
                 from = ""
             )
         )
-        Log.d(TAG, "Websocket sent text message")
+        Log.d(TAG, "Sent text message")
     }
 
     suspend fun subscribeFromUser(fromUser: String, cb: (TextMessage) -> Unit) {
@@ -93,17 +98,12 @@ object WebsocketClient {
         }
     }
 
-    private suspend fun sendToSubscribers(frame: Frame.Text) {
-        val msg = Json.decodeFromString<TextMessage>(frame.readText())
-        if (msg.type == "text") {
-            subscriberMutex.withLock {
-                subscriberMap[msg.from]?.let {
-                    Log.d(TAG, "subscriberMap has ${msg.from}")
-                    it(msg)
-                }
+    private suspend fun sendToSubscribers(msg: TextMessage) {
+        subscriberMutex.withLock {
+            subscriberMap[msg.from]?.let {
+                Log.d(TAG, "subscriberMap has ${msg.from}")
+                it(msg)
             }
-        } else {
-            Log.d(TAG, "sendToSubscribers type is ${msg.type}")
         }
     }
 

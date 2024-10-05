@@ -106,7 +106,6 @@ fun ChatHistory(chatViewModel: ChatViewModel = viewModel()) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(chatViewModel.messageHistory.size) {
-        Log.d(TAG, "SCROLL TO BOTTOM")
         listState.animateScrollToItem(chatViewModel.messageHistory.size)
     }
 

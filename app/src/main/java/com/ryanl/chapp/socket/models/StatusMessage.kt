@@ -4,10 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("text")
-data class TextMessage (
+@SerialName("status")
+data class StatusMessage (
     override val type: String,
-    val from: String,
-    val text: String,
-    val to: String,
+    val who: String,
+    val status: String,
 ) : Message()
