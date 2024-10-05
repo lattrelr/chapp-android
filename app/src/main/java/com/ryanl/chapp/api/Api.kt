@@ -35,10 +35,13 @@ object Api {
         retrofit.create(MessagesService::class.java)
     }
 
-    suspend fun login(username: String, password: String): ResponseLogin {
-        // TODO check if response isSuccessful ?
+    suspend fun login(username: String, password: String): ResponseLogin? {
         Log.d(TAG, "Logging in...")
-        return sessionsService.login(Login(username, password))
+        val resp = sessionsService.login(Login(username, password))
+        if (resp.isSuccessful) {
+            return resp.body()
+        }
+        return null
     }
 
     suspend fun checkForActiveSession(token: String): ResponseActive? {

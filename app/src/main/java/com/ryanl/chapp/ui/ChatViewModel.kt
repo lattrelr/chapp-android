@@ -1,13 +1,11 @@
 package com.ryanl.chapp.ui
 
 import android.util.Log
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ryanl.chapp.StoredAppPrefs
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.Message
 import com.ryanl.chapp.socket.WebsocketClient
@@ -28,6 +26,7 @@ class ChatViewModel() : ViewModel() {
     fun fetchHistory(toUserId: String?) {
         // TODO get what you can from DB, then request IDs past what is in the DB from server.
         // TODO update backend to support this.
+        clearHistory()
         viewModelScope.launch {
             toUserId?.let {
                 messageHistory.addAll(

@@ -1,4 +1,4 @@
-package com.ryanl.chapp.ui
+package com.ryanl.chapp
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE

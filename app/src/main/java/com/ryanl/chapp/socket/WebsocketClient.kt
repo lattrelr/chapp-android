@@ -12,8 +12,11 @@ import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.sync.Mutex
@@ -34,18 +37,30 @@ object WebsocketClient {
         }
     }
     private var session: DefaultClientWebSocketSession? = null
+    private var wsJob: Job? = null
 
-    suspend fun runForever(token: String) {
-        try {
-            while (true) {
-                connectAndReceive(token)
-                Log.e(TAG, "Try to reconnect...")
-            }
-        }  catch(e: CancellationException) {
-            Log.e(TAG, "Closed. Job cancelled.")
-            session?.close()
+    fun closeSocket() {
+        kotlinx.coroutines.MainScope().launch {
+            wsJob?.cancelAndJoin()
         }
-        Log.d(TAG, "runForever done")
+    }
+
+    fun runForever(token: String) {
+        kotlinx.coroutines.MainScope().launch {
+            wsJob?.cancelAndJoin()
+            wsJob = kotlinx.coroutines.MainScope().launch {
+                try {
+                    while (true) {
+                        connectAndReceive(token)
+                        Log.e(TAG, "Try to reconnect...")
+                    }
+                } catch (e: CancellationException) {
+                    Log.e(TAG, "Closed. Job cancelled.")
+                    session?.close()
+                }
+                Log.d(TAG, "runForever done")
+            }
+        }
     }
 
     private suspend fun connectAndReceive(token: String) {

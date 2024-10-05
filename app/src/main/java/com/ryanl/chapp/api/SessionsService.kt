@@ -17,5 +17,5 @@ interface SessionsService {
     /*@GET("sessions/logout")
     suspend fun logout(): List<User>*/
     @POST("sessions/login")
-    suspend fun login(@Body login: Login): ResponseLogin
+    suspend fun login(@Body login: Login): Response<ResponseLogin>
 }
