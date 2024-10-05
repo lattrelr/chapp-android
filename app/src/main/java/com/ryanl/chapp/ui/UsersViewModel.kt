@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.api.Api
-import com.ryanl.chapp.models.User
+import com.ryanl.chapp.api.models.User
 import com.ryanl.chapp.socket.WebsocketClient
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay

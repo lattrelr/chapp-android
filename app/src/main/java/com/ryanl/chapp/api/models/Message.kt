@@ -1,4 +1,4 @@
-package com.ryanl.chapp.models
+package com.ryanl.chapp.api.models
 
 import kotlinx.serialization.Serializable
 

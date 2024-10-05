@@ -8,8 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.api.Api
-import com.ryanl.chapp.models.ResponseActive
-import com.ryanl.chapp.models.ResponseLogin
+import com.ryanl.chapp.api.models.ResponseActive
+import com.ryanl.chapp.api.models.ResponseLogin
 import com.ryanl.chapp.socket.WebsocketClient
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin

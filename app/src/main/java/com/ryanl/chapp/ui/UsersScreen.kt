@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ryanl.chapp.ChatActivity
 import com.ryanl.chapp.UsersActivity
-import com.ryanl.chapp.models.User
+import com.ryanl.chapp.api.models.User
 
 private const val TAG = "UsersScreen"
 

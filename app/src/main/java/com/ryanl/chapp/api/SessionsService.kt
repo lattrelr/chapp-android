@@ -1,9 +1,9 @@
 package com.ryanl.chapp.api
 
-import com.ryanl.chapp.models.Login
-import com.ryanl.chapp.models.ResponseActive
-import com.ryanl.chapp.models.ResponseLogin
-import com.ryanl.chapp.models.User
+import com.ryanl.chapp.api.models.Login
+import com.ryanl.chapp.api.models.ResponseActive
+import com.ryanl.chapp.api.models.ResponseLogin
+import com.ryanl.chapp.api.models.User
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

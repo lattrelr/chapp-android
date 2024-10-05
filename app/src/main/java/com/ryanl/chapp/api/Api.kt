@@ -1,11 +1,11 @@
 package com.ryanl.chapp.api
 
 import android.util.Log
-import com.ryanl.chapp.models.Login
-import com.ryanl.chapp.models.Message
-import com.ryanl.chapp.models.ResponseActive
-import com.ryanl.chapp.models.ResponseLogin
-import com.ryanl.chapp.models.User
+import com.ryanl.chapp.api.models.Login
+import com.ryanl.chapp.api.models.Message
+import com.ryanl.chapp.api.models.ResponseActive
+import com.ryanl.chapp.api.models.ResponseLogin
+import com.ryanl.chapp.api.models.User
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -31,6 +31,10 @@ object Api {
         retrofit.create(SessionsService::class.java)
     }
 
+    private val messagesService: MessagesService by lazy {
+        retrofit.create(MessagesService::class.java)
+    }
+
     suspend fun login(username: String, password: String): ResponseLogin {
         // TODO check if response isSuccessful ?
         Log.d(TAG, "Logging in...")
@@ -52,6 +56,11 @@ object Api {
         return usersService.getUsers()
     }
 
+    suspend fun getConversation(user1: String, user2: String): List<Message> {
+        Log.d(TAG, "Getting conversation...")
+        return messagesService.getConversation(user1, user2)
+    }
+
     /*fun getUsers(): List<User> {
         val jsonData = """
           [
@@ -66,7 +75,7 @@ object Api {
         return myList
     }*/
 
-    fun getConversation(user1: String, user2: String): List<Message> {
+    /*fun getConversation(user1: String, user2: String): List<Message> {
         val jsonData = """
           [
             {"from": "0", "to": "1", "text": "Hey, how is it going?"},
@@ -78,7 +87,7 @@ object Api {
         """.trimIndent()
         val myList = Json.decodeFromString<List<Message>>(jsonData)
         return myList
-    }
+    }*/
 
     fun getMyUserId(): String {
         return "0"

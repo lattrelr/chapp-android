@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -32,30 +33,48 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ryanl.chapp.models.Message
+import com.ryanl.chapp.api.models.Message
+import com.ryanl.chapp.socket.WebsocketClient
 
 private const val TAG = "ChatScreen"
 
-// TODO does recompose keep parameters?
 @Composable
 fun ChatScreen(
     toUserId: String?,
     toDisplayName: String?,
     chatViewModel: ChatViewModel = viewModel()
 ) {
-    chatViewModel.fetchHistory(toUserId)
+    // Every time we come to the foreground, subscribe to socket, and get history.
+    // TODO only get new history and not all history ?  Store old history in room db
+    LifecycleStartEffect(Unit) {
+        Log.d(TAG, "Chat window in foreground")
+        chatViewModel.fetchHistory(toUserId)
+        chatViewModel.subscribeFromUser(toUserId)
+        chatViewModel.subscribeFromUser(StoredAppPrefs.getUserId())
+        onStopOrDispose {
+            chatViewModel.unsubscribeFromUser(toUserId)
+            chatViewModel.unsubscribeFromUser(StoredAppPrefs.getUserId())
+            chatViewModel.clearHistory()
+        }
+    }
+
     Column {
         ChatHeader(toDisplayName)
         ChatHistory(chatViewModel)
@@ -84,10 +103,18 @@ fun ChatHeader(toDisplayName: String?) {
 
 @Composable
 fun ChatHistory(chatViewModel: ChatViewModel = viewModel()) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(chatViewModel.messageHistory.size) {
+        Log.d(TAG, "SCROLL TO BOTTOM")
+        listState.animateScrollToItem(chatViewModel.messageHistory.size)
+    }
+
     LazyColumn (
         modifier = Modifier
             .fillMaxHeight(0.9F)
-            .fillMaxWidth()
+            .fillMaxWidth(),
+        state = listState,
     ) {
         items(chatViewModel.messageHistory) { msg ->
             MessageBubble(msg)
@@ -123,6 +150,9 @@ fun MessageBubble(message: Message) {
 
 @Composable
 fun ChatSend(chatViewModel: ChatViewModel = viewModel(), toUserId: String?) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
     Row (
         modifier = Modifier
             .fillMaxSize()
@@ -136,7 +166,11 @@ fun ChatSend(chatViewModel: ChatViewModel = viewModel(), toUserId: String?) {
             onValueChange = { chatViewModel.updateMessage(it) },
             modifier = Modifier.fillMaxWidth(0.85F)
         )
-        IconButton(onClick = { chatViewModel.sendMessage(toUserId) }) {
+        IconButton(onClick = {
+            chatViewModel.sendMessage(toUserId)
+            focusManager.clearFocus()
+            //keyboardController?.hide()
+        }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Default.Send,
                 contentDescription = "User picture",
