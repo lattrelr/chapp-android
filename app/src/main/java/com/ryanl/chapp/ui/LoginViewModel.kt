@@ -38,7 +38,7 @@ class LoginViewModel : ViewModel() {
                 // Start the socket now that we have a valid token
                 wsJob?.cancelAndJoin()
                 wsJob = viewModelScope.launch {
-                    WebsocketClient.connect(response.token)
+                    WebsocketClient.runForever(response.token)
                 }
                 //WebsocketClient.sendTextMessage("MMMMMM", response.userId)
             } catch (e: Exception) {
@@ -73,7 +73,7 @@ class LoginViewModel : ViewModel() {
                     loggedInState = true
                     wsJob?.cancelAndJoin()
                     wsJob = viewModelScope.launch {
-                        WebsocketClient.connect(StoredAppPrefs.getToken())
+                        WebsocketClient.runForever(StoredAppPrefs.getToken())
                     }
                     Log.d(TAG, "checkForActiveSession: DONE")
                     //WebsocketClient.sendTextMessage("MMMMMM", StoredAppPrefs.getUserId())

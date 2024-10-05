@@ -12,11 +12,15 @@ import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.EOFException
+import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 object WebsocketClient {
     private const val TAG = "WebsocketClient"
@@ -32,45 +36,65 @@ object WebsocketClient {
     private var session: DefaultClientWebSocketSession? = null
 
     // TODO handle server restart closing the socket.
-
-    suspend fun connect(token: String) {
-        Log.d(TAG, "Starting...")
-        session = client.webSocketSession (
-            method = HttpMethod.Get,
-            host = SERVER_NAME,
-            port = PORT) {
-                header("authorization", "bearer $token")
-            }
-
+    suspend fun runForever(token: String) {
         try {
-            session?.incoming?.receiveAsFlow()?.collect() {
-                Log.d(TAG, "Data rxed")
-                if (it is Frame.Text && it.fin) {
-                    try {
-                        val msg = Json.decodeFromString<Message>(it.readText())
-                        when (msg.type) {
-                            "text" -> sendToSubscribers(msg as TextMessage)
-                            "status" -> { Log.d(TAG, "$msg") }
-                        }
-                    } catch (e: SerializationException) {
-                        Log.e(TAG, "Message issue $e")
-                    }
-                }
+            while (true) {
+                connectAndReceive(token)
+                Log.e(TAG, "Try to reconnect...")
             }
-        } catch(e: Exception) {
-            // TODO Handle websocket Exception vs Coroutine exception!
-            Log.e(TAG, "Rx closed - $e ${e.message}")
+        }  catch(e: CancellationException) {
+            Log.e(TAG, "Closed. Job cancelled.")
             session?.close()
         }
-
-        Log.d(TAG, "Done!")
+        Log.d(TAG, "runForever done")
     }
 
-    /*fun close() {
-        // Not sure what this does, close() seems to work.
-        session?.incoming?.cancel()
-        Log.e(TAG, "Websocket closed!")
-    }*/
+    private suspend fun connectAndReceive(token: String) {
+        Log.d(TAG, "Starting connect loop...")
+        try {
+            session = client.webSocketSession(
+                method = HttpMethod.Get,
+                host = SERVER_NAME,
+                port = PORT
+            ) {
+                header("authorization", "bearer $token")
+            }
+        } catch (e: Exception) {
+            when(e) {
+                is EOFException, is IOException -> {
+                    Log.e(TAG, "Connect failed, let's try again in a few")
+                    delay(5000)
+                    return
+                }
+                else -> throw e
+            }
+        }
+
+        session?.incoming?.receiveAsFlow()?.collect() {
+            Log.d(TAG, "Data rxed")
+            when (it) {
+                is Frame.Text -> handleDataMessage(it)
+                is Frame.Ping -> { Log.e(TAG, "Ping frame is unhandled") }
+                is Frame.Pong -> { Log.e(TAG, "Pong frame is unhandled") }
+                is Frame.Binary -> { Log.e(TAG, "Binary frame is unhandled") }
+                is Frame.Close -> { Log.e(TAG, "Close frame is unhandled") }
+            }
+        }
+        Log.e(TAG, "Exiting rx loop. Server offline?")
+
+    }
+
+    private suspend fun handleDataMessage(textFrame: Frame.Text) {
+        try {
+            val msg = Json.decodeFromString<Message>(textFrame.readText())
+            when (msg.type) {
+                "text" -> sendToSubscribers(msg as TextMessage)
+                "status" -> { Log.d(TAG, "$msg") }
+            }
+        } catch (e: SerializationException) {
+            Log.e(TAG, "Message issue $e")
+        }
+    }
 
     suspend fun sendTextMessage(toUser: String, msgText: String) {
         session?.sendSerialized(
