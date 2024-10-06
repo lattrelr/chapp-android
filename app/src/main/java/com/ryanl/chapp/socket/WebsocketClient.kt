@@ -29,7 +29,7 @@ object WebsocketClient {
     private const val TAG = "WebsocketClient"
     private const val SERVER_NAME = "10.0.2.2"
     private const val PORT = 30000
-    private val subscriberMap: MutableMap<String,(TextMessage) -> Unit> = mutableMapOf()
+    private val subscriberMap: MutableMap<String,suspend (TextMessage) -> Unit> = mutableMapOf()
     private val subscriberMutex = Mutex()
     private val client = HttpClient(CIO) {
         install(WebSockets) {
@@ -115,13 +115,14 @@ object WebsocketClient {
                 type = "text",
                 text = msgText,
                 to = toUser,
-                from = ""
+                from = "",
+                _id = ""
             )
         )
         Log.d(TAG, "Sent text message")
     }
 
-    suspend fun subscribeFromUser(fromUser: String, cb: (TextMessage) -> Unit) {
+    suspend fun subscribeFromUser(fromUser: String, cb: suspend (TextMessage) -> Unit) {
         Log.d(TAG, "Watching for $fromUser")
         subscriberMutex.withLock {
             subscriberMap[fromUser] = cb;

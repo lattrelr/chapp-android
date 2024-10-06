@@ -51,15 +51,10 @@ fun ChatScreen(
     // TODO only get new history and not all history ?  Store old history in room db
     LifecycleStartEffect(Unit) {
         Log.d(TAG, "Chat window in foreground")
-        // TODO deal with any races here...if we get history and messages at the same time
-        chatViewModel.subscribeFromUser(toUserId)
-        chatViewModel.subscribeFromUser(StoredAppPrefs.getUserId())
-        chatViewModel.fetchHistory(toUserId)
+        chatViewModel.enterChatView(toUserId, StoredAppPrefs.getUserId())
         onStopOrDispose {
             // TODO this runs twice, but shouldn't matter
-            chatViewModel.unsubscribeFromUser(toUserId)
-            chatViewModel.unsubscribeFromUser(StoredAppPrefs.getUserId())
-            chatViewModel.clearHistory()
+            chatViewModel.leaveChatView(toUserId, StoredAppPrefs.getUserId())
         }
     }
 

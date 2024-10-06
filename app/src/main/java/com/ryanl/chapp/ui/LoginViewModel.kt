@@ -21,7 +21,6 @@ private const val TAG = "LoginViewModel"
 class LoginViewModel : ViewModel() {
     var loggedInState by mutableStateOf(false)
         private set
-    private var wsJob: Job? = null
 
     fun doLogin(username: String, password: String) {
         Log.d(TAG, "doLogin: $username, $password - state is $loggedInState")
