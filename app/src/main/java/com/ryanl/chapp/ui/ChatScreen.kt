@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,11 +50,19 @@ fun ChatScreen(
 ) {
     // Every time we come to the foreground, subscribe to socket, and get history.
     // TODO only get new history and not all history ?  Store old history in room db
-    LifecycleStartEffect(Unit) {
+    /*LifecycleStartEffect(Unit) {
         Log.d(TAG, "Chat window in foreground")
         chatViewModel.enterChatView(toUserId, StoredAppPrefs.getUserId())
         onStopOrDispose {
             // TODO this runs twice, but shouldn't matter
+            chatViewModel.leaveChatView(toUserId, StoredAppPrefs.getUserId())
+        }
+    }*/
+
+    // TODO does this change with userId ?
+    DisposableEffect(/*toUserId*/Unit) {
+        chatViewModel.enterChatView(toUserId, StoredAppPrefs.getUserId())
+        onDispose {
             chatViewModel.leaveChatView(toUserId, StoredAppPrefs.getUserId())
         }
     }
@@ -89,7 +98,8 @@ fun ChatHistory(chatViewModel: ChatViewModel = viewModel()) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(chatViewModel.messageHistory.size) {
-        listState.animateScrollToItem(chatViewModel.messageHistory.size)
+        //listState.animateScrollToItem(chatViewModel.messageHistory.size)
+        listState.scrollToItem(chatViewModel.messageHistory.size)
     }
 
     LazyColumn (

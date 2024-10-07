@@ -17,7 +17,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
         <activity
-            android:name=".LoginActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.ChappAndroid">
@@ -25,18 +25,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".UsersActivity"
-            android:exported="false"
-            android:label="@string/title_activity_users"
-            android:theme="@style/Theme.ChappAndroid">
-        </activity>
-        <activity
-            android:name=".ChatActivity"
-            android:exported="false"
-            android:label="@string/title_activity_chat"
-            android:theme="@style/Theme.ChappAndroid">
         </activity>
     </application>
 

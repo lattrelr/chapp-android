@@ -33,14 +33,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ryanl.chapp.ChatActivity
-import com.ryanl.chapp.UsersActivity
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.ryanl.chapp.api.models.User
 
 private const val TAG = "UsersScreen"
 
 @Composable
-fun UsersScreen(usersViewModel: UsersViewModel = viewModel()) {
+fun UsersScreen(
+    usersViewModel: UsersViewModel = viewModel(),
+    navController: NavHostController
+) {
     LaunchedEffect(Unit) {
         usersViewModel.fetchUsers()
     }
@@ -51,15 +54,13 @@ fun UsersScreen(usersViewModel: UsersViewModel = viewModel()) {
           .fillMaxHeight()*/
     ) {
         items(usersViewModel.userList) { user ->
-            UserRow(user)
+            UserRow(user, navController)
         }
     }
 }
 
 @Composable
-fun UserRow(user: User) {
-    val context = LocalContext.current
-
+fun UserRow(user: User, navController: NavHostController) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -72,10 +73,7 @@ fun UserRow(user: User) {
             .padding(2.dp),
         onClick = {
             Log.d(TAG, "clicked ${user.displayname}")
-            val intent = Intent(context, ChatActivity::class.java)
-            intent.putExtra("displayName", user.displayname)
-            intent.putExtra("id", user.id)
-            context.startActivity(intent)
+            navController.navigate("chat/${user.id}/${user.displayname}")
         }
     ) {
         Row {
@@ -104,7 +102,7 @@ fun UsersPreview() {
         Box(modifier = Modifier
             .padding(innerPadding)
             .fillMaxSize()) {
-            UsersScreen()
+            //UsersScreen()
         }
     }
 }

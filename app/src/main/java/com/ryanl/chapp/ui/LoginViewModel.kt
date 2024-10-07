@@ -18,12 +18,8 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "LoginViewModel"
 
-class LoginViewModel : ViewModel() {
-    var loggedInState by mutableStateOf(false)
-        private set
-
-    fun doLogin(username: String, password: String) {
-        Log.d(TAG, "doLogin: $username, $password - state is $loggedInState")
+class LoginViewModel() : ViewModel() {
+    fun doLogin(username: String, password: String, onDone: (Boolean) -> Unit) {
         viewModelScope.launch {
             var response: ResponseLogin? = null
 
@@ -41,7 +37,7 @@ class LoginViewModel : ViewModel() {
                 // Start the socket now that we have a valid token
                 WebsocketClient.runForever(response.token)
                 // Trigger the UI to move to the next activity
-                loggedInState = true
+                onDone(true)
             }
         }
     }
@@ -50,14 +46,9 @@ class LoginViewModel : ViewModel() {
     fun logout() {
         Log.e(TAG, "Logging out...")
         WebsocketClient.closeSocket()
-        loggedInState = false
     }
 
-    fun reset() {
-        loggedInState = false
-    }
-
-    fun checkForActiveSession() {
+    fun checkForActiveSession(onDone: (Boolean) -> Unit) {
         viewModelScope.launch {
             var session: ResponseActive? = null
 
@@ -70,8 +61,8 @@ class LoginViewModel : ViewModel() {
             session?.let {
                 if (session.userId == StoredAppPrefs.getUserId()) {
                     Log.d(TAG, "checkForActiveSession: Session is valid for $session.userId")
-                    loggedInState = true
                     WebsocketClient.runForever(StoredAppPrefs.getToken())
+                    onDone(true)
                 }
             }
         }

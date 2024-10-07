@@ -1,35 +1,34 @@
 package com.ryanl.chapp
 
-import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.ryanl.chapp.ui.ChatScreen
+import androidx.navigation.compose.rememberNavController
+import com.ryanl.chapp.ui.AppNavigation
+import com.ryanl.chapp.ui.LoginScreen
 import com.ryanl.chapp.ui.TopBarNav
+import com.ryanl.chapp.ui.UsersScreen
 import com.ryanl.chapp.ui.theme.ChappAndroidTheme
 
-class ChatActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val displayName = intent.getStringExtra("displayName")
-        val userId = intent.getStringExtra("id")
+        StoredAppPrefs.open(applicationContext)
         setContent {
+            val navController = rememberNavController()
             ChappAndroidTheme {
                 Scaffold (
-                    topBar = { TopBarNav() }
+                    topBar = { TopBarNav(navController) }
                 ) { innerPadding ->
                     Box(modifier = Modifier
                         .padding(innerPadding)
                         .fillMaxSize()) {
-                        ChatScreen(userId, displayName)
+                        AppNavigation(navController)
                     }
                 }
             }

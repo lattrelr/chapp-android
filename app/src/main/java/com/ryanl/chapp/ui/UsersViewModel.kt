@@ -22,6 +22,7 @@ class UsersViewModel : ViewModel() {
 
     fun fetchUsers() {
         viewModelScope.launch {
+            userList.clear()
             try {
                 userList.addAll(Api.getUsers())
             } catch (e: Exception) {
