@@ -42,9 +42,10 @@ class LoginViewModel() : ViewModel() {
         }
     }
 
-    // TODO this logic is ugly
     fun logout() {
         Log.e(TAG, "Logging out...")
+        StoredAppPrefs.setToken("")
+        StoredAppPrefs.setUserId("")
         WebsocketClient.closeSocket()
     }
 
