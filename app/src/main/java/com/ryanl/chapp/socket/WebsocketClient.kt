@@ -2,6 +2,7 @@ package com.ryanl.chapp.socket
 
 import android.util.Log
 import com.ryanl.chapp.socket.models.Message
+import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -29,7 +30,8 @@ object WebsocketClient {
     private const val TAG = "WebsocketClient"
     private const val SERVER_NAME = "10.0.2.2"
     private const val PORT = 30000
-    private val subscriberMap: MutableMap<String,suspend (TextMessage) -> Unit> = mutableMapOf()
+    private val subscriberMapText: MutableMap<String,suspend (TextMessage) -> Unit> = mutableMapOf()
+    private val subscriberSetStatus: MutableSet<suspend (StatusMessage) -> Unit> = mutableSetOf()
     private val subscriberMutex = Mutex()
     private val client = HttpClient(CIO) {
         install(WebSockets) {
@@ -101,8 +103,8 @@ object WebsocketClient {
         try {
             val msg = Json.decodeFromString<Message>(textFrame.readText())
             when (msg.type) {
-                "text" -> sendToSubscribers(msg as TextMessage)
-                "status" -> { Log.d(TAG, "$msg") }
+                "text" -> sendTextToSubscribers(msg as TextMessage)
+                "status" -> sendStatusToSubscribers(msg as StatusMessage)
             }
         } catch (e: SerializationException) {
             Log.e(TAG, "Message issue $e")
@@ -125,22 +127,45 @@ object WebsocketClient {
     suspend fun subscribeFromUser(fromUser: String, cb: suspend (TextMessage) -> Unit) {
         Log.d(TAG, "Watching for $fromUser")
         subscriberMutex.withLock {
-            subscriberMap[fromUser] = cb;
+            subscriberMapText[fromUser] = cb;
         }
     }
 
     suspend fun unsubscribeFromUser(fromUser: String) {
         Log.d(TAG, "No longer watching $fromUser")
         subscriberMutex.withLock {
-            subscriberMap.remove(fromUser)
+            subscriberMapText.remove(fromUser)
         }
     }
 
-    private suspend fun sendToSubscribers(msg: TextMessage) {
+    suspend fun subscribeToStatus(cb: suspend (StatusMessage) -> Unit) {
+        Log.d(TAG, "Watching for status")
         subscriberMutex.withLock {
-            subscriberMap[msg.from]?.let {
+            subscriberSetStatus.add(cb)
+        }
+    }
+
+    suspend fun unsubscribeFromStatus(cb: suspend (StatusMessage) -> Unit) {
+        Log.d(TAG, "No longer watching status")
+        subscriberMutex.withLock {
+            subscriberSetStatus.remove(cb)
+        }
+    }
+
+    private suspend fun sendTextToSubscribers(msg: TextMessage) {
+        subscriberMutex.withLock {
+            subscriberMapText[msg.from]?.let {
                 Log.d(TAG, "subscriberMap has ${msg.from}")
                 it(msg)
+            }
+        }
+    }
+
+    private suspend fun sendStatusToSubscribers(msg: StatusMessage) {
+        Log.d(TAG, "Got status $msg")
+        subscriberMutex.withLock {
+            subscriberSetStatus.forEach { cb ->
+                cb(msg)
             }
         }
     }
