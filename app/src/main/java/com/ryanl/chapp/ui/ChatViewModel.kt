@@ -9,6 +9,7 @@ import com.ryanl.chapp.StoredAppPrefs
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.Message
 import com.ryanl.chapp.socket.WebsocketClient
+import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -23,6 +24,9 @@ class ChatViewModel : ViewModel() {
         private set
     private val historyMutex = Mutex()
     private val historyMsgIdSet = mutableSetOf<String>()
+    private var userId: String? = null
+    var userOnline = mutableStateOf(false)
+        private set
 
     // Strategy to avoid message loss:
     // - Subscribe first
@@ -32,18 +36,41 @@ class ChatViewModel : ViewModel() {
     // - While history was loading, we won't show it twice.
     fun enterChatView(fromUserId: String?, toUserId: String?) {
         viewModelScope.launch {
+            userId = fromUserId
+            // Fetch user data from server
+            // TODO maybe rework, don't like making this call but not sure how else to get valid
+            // TODO user state
+            fromUserId?.let { id ->
+                val userData = Api.getUser(id)
+                userData?.let { u ->
+                    userOnline.value = u.online
+                }
+            }
             subscribeFromUser(toUserId)
             subscribeFromUser(fromUserId)
             fetchHistory(fromUserId)
+            subscribeUserStatus()
         }
     }
 
     fun leaveChatView(fromUserId: String?, toUserId: String?) {
         viewModelScope.launch {
+            // TODO don't really like these member vars ?
+            userId = null
+            userOnline.value = false
+            unsubscribeUserStatus()
             unsubscribeFromUser(toUserId)
             unsubscribeFromUser(fromUserId)
             messageHistory.clear()
             historyMsgIdSet.clear()
+        }
+    }
+
+    private fun statusCallback(msg: StatusMessage) {
+        userId?.let { u ->
+            if (u == msg.who) {
+                userOnline.value = msg.status == "ONLINE"
+            }
         }
     }
 
@@ -83,6 +110,14 @@ class ChatViewModel : ViewModel() {
         fromUser?.let {
             WebsocketClient.unsubscribeFromUser(it)
         }
+    }
+
+    private suspend fun subscribeUserStatus() {
+        WebsocketClient.subscribeToStatus(::statusCallback)
+    }
+
+    private suspend fun unsubscribeUserStatus() {
+        WebsocketClient.unsubscribeFromStatus(::statusCallback)
     }
 
     fun updateMessage(messageContents: String) {

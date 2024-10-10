@@ -15,36 +15,42 @@ import com.ryanl.chapp.socket.models.StatusMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private const val TAG = "LoginViewModel"
 
 class UsersViewModel : ViewModel() {
     var userList = mutableStateListOf<User>()
         private set
+    private val statusMutex = Mutex()
 
     private suspend fun statusCallback(msg: StatusMessage) {
-        for ((idx, user) in userList.withIndex()) {
-            if (user.id == msg.who) {
-                userList[idx] = userList[idx].copy(online=(msg.status == "ONLINE"))
-                break
+        statusMutex.withLock {
+            for ((idx, user) in userList.withIndex()) {
+                if (user.id == msg.who) {
+                    userList[idx] = userList[idx].copy(online = (msg.status == "ONLINE"))
+                    break
+                }
             }
         }
     }
 
-    fun subscribeUserStatus() {
+    fun enterUsersView() {
         viewModelScope.launch {
             WebsocketClient.subscribeToStatus(::statusCallback)
+            fetchUsers()
         }
     }
 
-    fun unsubscribeUserStatus() {
+    fun leaveUsersView() {
         viewModelScope.launch {
             WebsocketClient.unsubscribeFromStatus(::statusCallback)
         }
     }
 
-    fun fetchUsers() {
-        viewModelScope.launch {
+    private suspend fun fetchUsers() {
+        statusMutex.withLock {
             userList.clear()
             try {
                 Api.getUsers().forEach { user ->

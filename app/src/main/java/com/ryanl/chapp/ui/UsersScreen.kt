@@ -59,10 +59,9 @@ fun UsersScreen(
     navController: NavHostController
 ) {
     DisposableEffect(Unit) {
-        usersViewModel.subscribeUserStatus()
-        usersViewModel.fetchUsers()
+        usersViewModel.enterUsersView()
         onDispose {
-            usersViewModel.unsubscribeUserStatus()
+            usersViewModel.leaveUsersView()
         }
     }
 

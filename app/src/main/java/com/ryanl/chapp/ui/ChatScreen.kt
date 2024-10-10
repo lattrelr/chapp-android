@@ -68,14 +68,14 @@ fun ChatScreen(
     }
 
     Column {
-        ChatHeader(toDisplayName)
+        ChatHeader(chatViewModel, toDisplayName)
         ChatHistory(chatViewModel)
         ChatSend(chatViewModel, toUserId)
     }
 }
 
 @Composable
-fun ChatHeader(toDisplayName: String?) {
+fun ChatHeader(chatViewModel: ChatViewModel, toDisplayName: String?) {
     Column (
         modifier = Modifier
             .fillMaxWidth()
@@ -90,6 +90,7 @@ fun ChatHeader(toDisplayName: String?) {
             modifier = Modifier.size(40.dp)
         )
         Text(text = "$toDisplayName")
+        Text(text = "${chatViewModel.userOnline.value}")
     }
 }
 

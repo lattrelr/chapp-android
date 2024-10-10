@@ -19,6 +19,7 @@ object Api {
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
+            //.addConverterFactory(MoshiConverterFactory.create().asLenient())
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
     }
@@ -57,6 +58,15 @@ object Api {
         // TODO check if response isSuccessful ?
         Log.d(TAG, "Getting users...")
         return usersService.getUsers()
+    }
+
+    suspend fun getUser(userId: String): User? {
+        Log.d(TAG, "Getting user $userId...")
+        val resp = usersService.getUser(userId)
+        if (resp.isSuccessful) {
+            return resp.body()
+        }
+        return null
     }
 
     suspend fun getConversation(user1: String, user2: String): List<Message> {
