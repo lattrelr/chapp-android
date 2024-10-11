@@ -2,18 +2,12 @@ package com.ryanl.chapp.ui
 
 import androidx.lifecycle.ViewModel
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
-import com.ryanl.chapp.StoredAppPrefs
+import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.ResponseActive
 import com.ryanl.chapp.api.models.ResponseLogin
 import com.ryanl.chapp.socket.WebsocketClient
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 private const val TAG = "LoginViewModel"

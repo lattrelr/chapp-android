@@ -1,6 +1,5 @@
 package com.ryanl.chapp.ui
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,9 +34,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ryanl.chapp.StoredAppPrefs
+import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.api.models.Message
 
 private const val TAG = "ChatScreen"
@@ -61,9 +59,9 @@ fun ChatScreen(
 
     // TODO does this change with userId ?
     DisposableEffect(/*toUserId*/Unit) {
-        chatViewModel.enterChatView(toUserId, StoredAppPrefs.getUserId())
+        chatViewModel.enterChatView(toUserId, toDisplayName)
         onDispose {
-            chatViewModel.leaveChatView(toUserId, StoredAppPrefs.getUserId())
+            chatViewModel.leaveChatView(toUserId)
         }
     }
 

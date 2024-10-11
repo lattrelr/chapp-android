@@ -1,19 +1,14 @@
 package com.ryanl.chapp.ui
 
 import android.util.Log
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ryanl.chapp.StoredAppPrefs
+import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.User
 import com.ryanl.chapp.socket.WebsocketClient
 import com.ryanl.chapp.socket.models.StatusMessage
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

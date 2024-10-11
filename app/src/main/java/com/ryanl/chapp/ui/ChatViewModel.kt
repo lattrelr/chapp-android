@@ -1,13 +1,16 @@
 package com.ryanl.chapp.ui
 
+import android.database.sqlite.SQLiteConstraintException
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ryanl.chapp.StoredAppPrefs
+import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.Message
+import com.ryanl.chapp.persist.AppDatabase
+import com.ryanl.chapp.persist.models.History
 import com.ryanl.chapp.socket.WebsocketClient
 import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
@@ -34,33 +37,44 @@ class ChatViewModel : ViewModel() {
     // - History update is locked so subscribe will suspend until we finish updating.
     // - We will keep track of all msg id hashes in a set, in case we got a message
     // - While history was loading, we won't show it twice.
-    fun enterChatView(fromUserId: String?, toUserId: String?) {
+    fun enterChatView(toUserId: String?, toUserDisplayName: String?) {
         viewModelScope.launch {
-            userId = fromUserId
+            userId = toUserId
             // Fetch user data from server
             // TODO maybe rework, don't like making this call but not sure how else to get valid
             // TODO user state
-            fromUserId?.let { id ->
+            toUserId?.let { id ->
                 val userData = Api.getUser(id)
                 userData?.let { u ->
                     userOnline.value = u.online
                 }
             }
-            subscribeFromUser(toUserId)
-            subscribeFromUser(fromUserId)
-            fetchHistory(fromUserId)
+
+            subscribeFromUser(userId)
+            subscribeFromUser(StoredAppPrefs.getUserId())
+            fetchHistory(userId)
             subscribeUserStatus()
+
+            if (toUserId != null && toUserDisplayName != null) {
+                AppDatabase.getInstance()?.let { db ->
+                    try {
+                        db.historyDao().insert(History(toUserId, toUserDisplayName))
+                    } catch (e: SQLiteConstraintException) {
+                        Log.d(TAG, "User already in history!")
+                    }
+                }
+            }
         }
     }
 
-    fun leaveChatView(fromUserId: String?, toUserId: String?) {
+    fun leaveChatView(toUserId: String?) {
         viewModelScope.launch {
             // TODO don't really like these member vars ?
             userId = null
             userOnline.value = false
             unsubscribeUserStatus()
             unsubscribeFromUser(toUserId)
-            unsubscribeFromUser(fromUserId)
+            unsubscribeFromUser(StoredAppPrefs.getUserId())
             messageHistory.clear()
             historyMsgIdSet.clear()
         }

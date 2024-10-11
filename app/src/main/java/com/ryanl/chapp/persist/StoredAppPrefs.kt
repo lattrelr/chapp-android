@@ -1,4 +1,4 @@
-package com.ryanl.chapp
+package com.ryanl.chapp.persist
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
