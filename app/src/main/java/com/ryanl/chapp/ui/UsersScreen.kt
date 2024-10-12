@@ -1,6 +1,7 @@
 package com.ryanl.chapp.ui
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -40,6 +41,9 @@ fun UsersScreen(
     usersViewModel: UsersViewModel = viewModel(),
     navController: NavHostController
 ) {
+    BackHandler {
+        // Do nothing, prevent logout
+    }
     DisposableEffect(Unit) {
         usersViewModel.enterUsersView()
         onDispose {
@@ -104,7 +108,7 @@ fun UserRow(user: User, navController: NavHostController) {
     }
 }
 
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun UsersPreview() {
     Scaffold (
@@ -116,4 +120,4 @@ fun UsersPreview() {
             //UsersScreen()
         }
     }
-}
+}*/

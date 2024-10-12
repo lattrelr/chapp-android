@@ -2,6 +2,7 @@ package com.ryanl.chapp.ui
 
 import android.text.format.DateUtils
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +50,10 @@ fun HistoryScreen(
     historyViewModel: HistoryViewModel = viewModel(),
     navController: NavHostController
 ) {
+    BackHandler {
+        // Do nothing, prevent logout
+    }
+
     DisposableEffect(Unit) {
         historyViewModel.enterUsersView()
         onDispose {

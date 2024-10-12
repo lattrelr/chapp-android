@@ -26,17 +26,15 @@ private const val tag = "LoginScreen"
 @Composable
 fun LoginScreen(
     loginViewModel: LoginViewModel = viewModel(),
-    navController: NavHostController
+    navController: NavHostController,
+    doLogout: Boolean = false,
 ) {
     var username by rememberSaveable { mutableStateOf("ryanl") }
     var password by rememberSaveable { mutableStateOf("password") }
-    var firstLaunch by rememberSaveable { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         Log.d(tag, "Launched!")
-        if (firstLaunch) {
-            firstLaunch = false
-            // Auto login on start up only
+        if (!doLogout) {
             loginViewModel.checkForActiveSession() {
                 navController.navigate("history")
             }

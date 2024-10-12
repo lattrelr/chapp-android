@@ -247,7 +247,7 @@ fun ChatSend(chatViewModel: ChatViewModel = viewModel(), toUserId: String?) {
     }
 }
 
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun ChatPreview() {
     Scaffold (
@@ -259,4 +259,4 @@ fun ChatPreview() {
             ChatScreen("1", "Bob")
         }
     }
-}
+}*/

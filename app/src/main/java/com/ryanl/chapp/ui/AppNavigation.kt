@@ -22,10 +22,19 @@ import androidx.navigation.navArgument
 fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = "login/false"
     ) {
-        composable("login") {
-            LoginScreen(navController = navController)
+        composable(
+            "login/{logout}",
+            arguments = listOf(
+                navArgument("logout") {
+                    type = NavType.BoolType
+                },
+            )
+        ) { backStackEntry ->
+            val arguments = backStackEntry.arguments
+            val logout = arguments?.getBoolean("logout") ?: false
+            LoginScreen(navController = navController, doLogout = logout)
         }
         composable("history") {
             HistoryScreen(navController = navController)
