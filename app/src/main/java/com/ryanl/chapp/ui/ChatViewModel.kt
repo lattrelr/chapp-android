@@ -50,9 +50,11 @@ class ChatViewModel : ViewModel() {
                 }
             }
 
-            subscribeFromUser(userId)
-            subscribeFromUser(StoredAppPrefs.getUserId())
-            fetchHistory(userId)
+            userId?.let {
+                subscribeFromUser(it)
+                subscribeFromUser(StoredAppPrefs.getUserId())
+                syncHistory(it)
+            }
             subscribeUserStatus()
 
             // Record that we have opened a chat window with this user
@@ -75,7 +77,9 @@ class ChatViewModel : ViewModel() {
             userId = null
             userOnline.value = false
             unsubscribeUserStatus()
-            unsubscribeFromUser(toUserId)
+            toUserId?.let {
+                unsubscribeFromUser(it)
+            }
             unsubscribeFromUser(StoredAppPrefs.getUserId())
             messageHistory.clear()
             historyMsgIdSet.clear()
@@ -90,69 +94,67 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    private suspend fun syncHistory() {
-        //viewModelScope.launch {
-            // TODO add all messages in messageHistory not in db to db
-            // TODO add all message not in messageHistory from db to messageHistory
-        //}
-        // Fetch from db first
-        // val db = AppDatabase.getInstance()
-        /*db?.messageDao()?.getMessages(user1, user2)?.let { hist ->
-            hist.forEach{ h ->
-                messageHistory(Message(h.))
-            }
-        }
-        historyMsgIdSet.update ( --- )
-        */
-    }
+    private suspend fun syncHistory(toUserId: String) {
+        val db = AppDatabase.getInstance()
+        var startTime: Long = 0
 
-    private suspend fun fetchHistory(toUserId: String?) {
         historyMutex.withLock {
             messageHistory.clear()
             historyMsgIdSet.clear()
-            toUserId?.let {
-                // Fetch history from the db first
-                syncHistory()
-                // TODO only add messages not in msgIdSet
-                // TODO only get messages after the last message in history
-                messageHistory.addAll(
-                    Api.getConversation(StoredAppPrefs.getUserId(), toUserId)
-                )
-                historyMsgIdSet.addAll(
-                    messageHistory.map { msg ->
-                        msg._id
-                    }
-                )
-                // Update db with any messages we might have been missing
-                viewModelScope.launch {
-                    syncHistory()
-                }
-            }
-        }
-        // Make sure the db is up to date
-        syncHistory()
-    }
 
-    private suspend fun subscribeFromUser(fromUser: String?) {
-        fromUser?.let {
-            WebsocketClient.subscribeFromUser(it) { msg: TextMessage ->
-                historyMutex.withLock {
-                    if (!historyMsgIdSet.contains(msg._id)) {
-                        historyMsgIdSet.add(msg._id)
-                        messageHistory.add(Message(msg.text, msg.from, msg.to, msg.date))
-                        viewModelScope.launch {
-                            syncHistory()
-                        }
+            // First populate the history from the database
+            db?.messageDao()?.let { dao ->
+                val conversation = dao.getConversation(toUserId, StoredAppPrefs.getUserId())
+                if (conversation.isNotEmpty()) {
+                    for (msg in conversation) {
+                        messageHistory.add(Message(msg))
+                        historyMsgIdSet.add(msg.id)
+                        if (msg.date > startTime)
+                            startTime = msg.date
                     }
+                }
+                Log.d(TAG, "Found ${conversation.size} messages in history")
+            }
+
+            // Next get the messages from the server
+            val newMessages =
+                Api.getConversationAfter(StoredAppPrefs.getUserId(), toUserId, startTime)
+            for (msg in newMessages) {
+                if (!historyMsgIdSet.contains(msg._id)) {
+                    messageHistory.add(msg)
+                    historyMsgIdSet.add(msg._id)
+                    // Write to db
+                    // TODO fix model names so it isn't confusing
+                    addMsgToDb(com.ryanl.chapp.persist.models.Message(msg))
                 }
             }
         }
     }
 
-    private suspend fun unsubscribeFromUser(fromUser: String?) {
-        fromUser?.let {
-            WebsocketClient.unsubscribeFromUser(it)
+    private suspend fun addMsgToDb(msg: com.ryanl.chapp.persist.models.Message) {
+        try {
+            AppDatabase.getInstance()?.messageDao()?.insert(msg)
+        } catch (e: SQLiteConstraintException) {
+            Log.d(TAG, "Message already in history!")
         }
+    }
+
+    private suspend fun subscribeFromUser(fromUser: String) {
+        WebsocketClient.subscribeFromUser(fromUser) { msg: TextMessage ->
+            historyMutex.withLock {
+                if (!historyMsgIdSet.contains(msg._id)) {
+                    historyMsgIdSet.add(msg._id)
+                    messageHistory.add(Message(msg))
+                    viewModelScope.launch {
+                        addMsgToDb(com.ryanl.chapp.persist.models.Message(msg))
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun unsubscribeFromUser(fromUser: String) {
+        WebsocketClient.unsubscribeFromUser(fromUser)
     }
 
     private suspend fun subscribeUserStatus() {

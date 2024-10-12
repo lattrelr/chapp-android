@@ -38,7 +38,7 @@ fun LoginScreen(
             firstLaunch = false
             // Auto login on start up only
             loginViewModel.checkForActiveSession() {
-                navController.navigate("users")
+                navController.navigate("history")
             }
         } else {
             loginViewModel.logout()
@@ -75,7 +75,7 @@ fun LoginScreen(
                     if (success) {
                         username = ""
                         password = ""
-                        navController.navigate("users")
+                        navController.navigate("history")
                     }
                     // TODO display message on failure
                 }

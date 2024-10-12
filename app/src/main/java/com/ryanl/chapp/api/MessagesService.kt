@@ -12,4 +12,10 @@ interface MessagesService {
         @Path("userId") user1: String,
         @Query("with") user2: String
     ): List<Message>
+    @GET("messages/{userId}")
+    suspend fun getConversationAfter(
+        @Path("userId") user1: String,
+        @Query("with") user2: String,
+        @Query("after") timestamp: Long
+    ): List<Message>
 }

@@ -10,7 +10,7 @@ import com.ryanl.chapp.persist.models.Message
 @Database(entities = [
     History::class,
     Message::class
-    ], version = 2)
+    ], version = 4)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
     abstract fun messageDao(): MessageDao

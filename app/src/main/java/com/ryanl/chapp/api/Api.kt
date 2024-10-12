@@ -74,6 +74,11 @@ object Api {
         return messagesService.getConversation(user1, user2)
     }
 
+    suspend fun getConversationAfter(user1: String, user2: String, timestamp: Long): List<Message> {
+        Log.d(TAG, "Getting conversation after $timestamp...")
+        return messagesService.getConversationAfter(user1, user2, timestamp)
+    }
+
     /*fun getUsers(): List<User> {
         val jsonData = """
           [
