@@ -5,10 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.ryanl.chapp.persist.models.History
+import com.ryanl.chapp.persist.models.Message
 
-@Database(entities = [History::class], version = 1)
+@Database(entities = [
+    History::class,
+    Message::class
+    ], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
+    abstract fun messageDao(): MessageDao
 
     companion object {
         @Volatile
@@ -21,7 +26,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).build()
+                )
+                    // TODO this is only for debug & dev!
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

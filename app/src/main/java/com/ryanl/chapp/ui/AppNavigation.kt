@@ -28,7 +28,8 @@ fun AppNavigation(navController: NavHostController) {
             LoginScreen(navController = navController)
         }
         composable("users") {
-            UsersScreen(navController = navController)
+            //UsersScreen(navController = navController)
+            HistoryScreen(navController = navController)
         }
         composable(
             "chat/{id}/{name}",

@@ -11,4 +11,5 @@ data class TextMessage (
     val text: String,
     val to: String,
     val _id: String,
+    val date: Long,
 ) : Message()

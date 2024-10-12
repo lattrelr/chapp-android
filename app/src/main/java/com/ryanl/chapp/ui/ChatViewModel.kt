@@ -55,6 +55,8 @@ class ChatViewModel : ViewModel() {
             fetchHistory(userId)
             subscribeUserStatus()
 
+            // Record that we have opened a chat window with this user
+            // so we can show it in the main history view later
             if (toUserId != null && toUserDisplayName != null) {
                 AppDatabase.getInstance()?.let { db ->
                     try {
@@ -88,13 +90,31 @@ class ChatViewModel : ViewModel() {
         }
     }
 
+    private suspend fun syncHistory() {
+        //viewModelScope.launch {
+            // TODO add all messages in messageHistory not in db to db
+            // TODO add all message not in messageHistory from db to messageHistory
+        //}
+        // Fetch from db first
+        // val db = AppDatabase.getInstance()
+        /*db?.messageDao()?.getMessages(user1, user2)?.let { hist ->
+            hist.forEach{ h ->
+                messageHistory(Message(h.))
+            }
+        }
+        historyMsgIdSet.update ( --- )
+        */
+    }
+
     private suspend fun fetchHistory(toUserId: String?) {
-        // TODO get what you can from DB, then request IDs past what is in the DB from server.
-        // TODO update backend to support this.
         historyMutex.withLock {
             messageHistory.clear()
             historyMsgIdSet.clear()
             toUserId?.let {
+                // Fetch history from the db first
+                syncHistory()
+                // TODO only add messages not in msgIdSet
+                // TODO only get messages after the last message in history
                 messageHistory.addAll(
                     Api.getConversation(StoredAppPrefs.getUserId(), toUserId)
                 )
@@ -103,8 +123,14 @@ class ChatViewModel : ViewModel() {
                         msg._id
                     }
                 )
+                // Update db with any messages we might have been missing
+                viewModelScope.launch {
+                    syncHistory()
+                }
             }
         }
+        // Make sure the db is up to date
+        syncHistory()
     }
 
     private suspend fun subscribeFromUser(fromUser: String?) {
@@ -113,7 +139,10 @@ class ChatViewModel : ViewModel() {
                 historyMutex.withLock {
                     if (!historyMsgIdSet.contains(msg._id)) {
                         historyMsgIdSet.add(msg._id)
-                        messageHistory.add(Message(msg.text, msg.from, msg.to))
+                        messageHistory.add(Message(msg.text, msg.from, msg.to, msg.date))
+                        viewModelScope.launch {
+                            syncHistory()
+                        }
                     }
                 }
             }

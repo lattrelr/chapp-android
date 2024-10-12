@@ -118,7 +118,8 @@ object WebsocketClient {
                 text = msgText,
                 to = toUser,
                 from = "",
-                _id = ""
+                _id = "",
+                date = 0,
             )
         )
         Log.d(TAG, "Sent text message")

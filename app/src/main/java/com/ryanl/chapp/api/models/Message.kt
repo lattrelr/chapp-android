@@ -7,5 +7,6 @@ data class Message(
     val text: String,
     val from: String,
     val to: String,
+    val date: Long,
     val _id: String = "",
 )
