@@ -27,7 +27,7 @@ class ChatViewModel : ViewModel() {
         private set
     private val historyMutex = Mutex()
     private val historyMsgIdSet = mutableSetOf<String>()
-    private var userId: String? = null
+    private var userId: String = ""
     var userOnline = mutableStateOf(false)
         private set
 
@@ -37,49 +37,41 @@ class ChatViewModel : ViewModel() {
     // - History update is locked so subscribe will suspend until we finish updating.
     // - We will keep track of all msg id hashes in a set, in case we got a message
     // - While history was loading, we won't show it twice.
-    fun enterChatView(toUserId: String?, toUserDisplayName: String?) {
+    fun enterChatView(toUserId: String, toUserDisplayName: String) {
         viewModelScope.launch {
             userId = toUserId
             // Fetch user data from server
             // TODO maybe rework, don't like making this call but not sure how else to get valid
             // TODO user state
-            toUserId?.let { id ->
-                val userData = Api.getUser(id)
-                userData?.let { u ->
-                    userOnline.value = u.online
-                }
+            val userData = Api.getUser(toUserId)
+            userData?.let { u ->
+                userOnline.value = u.online
             }
 
-            userId?.let {
-                subscribeFromUser(it)
-                subscribeFromUser(StoredAppPrefs.getUserId())
-                syncHistory(it)
-            }
+            subscribeFromUser(toUserId)
+            subscribeFromUser(StoredAppPrefs.getUserId())
+            syncHistory(toUserId)
             subscribeUserStatus()
 
             // Record that we have opened a chat window with this user
             // so we can show it in the main history view later
-            if (toUserId != null && toUserDisplayName != null) {
-                AppDatabase.getInstance()?.let { db ->
-                    try {
-                        db.historyDao().insert(History(toUserId, toUserDisplayName))
-                    } catch (e: SQLiteConstraintException) {
-                        Log.d(TAG, "User already in history!")
-                    }
+            AppDatabase.getInstance()?.let { db ->
+                try {
+                    db.historyDao().insert(History(toUserId, toUserDisplayName))
+                } catch (e: SQLiteConstraintException) {
+                    Log.d(TAG, "User already in history!")
                 }
             }
         }
     }
 
-    fun leaveChatView(toUserId: String?) {
+    fun leaveChatView(toUserId: String) {
         viewModelScope.launch {
             // TODO don't really like these member vars ?
-            userId = null
+            userId = ""
             userOnline.value = false
             unsubscribeUserStatus()
-            toUserId?.let {
-                unsubscribeFromUser(it)
-            }
+            unsubscribeFromUser(toUserId)
             unsubscribeFromUser(StoredAppPrefs.getUserId())
             messageHistory.clear()
             historyMsgIdSet.clear()
@@ -87,10 +79,8 @@ class ChatViewModel : ViewModel() {
     }
 
     private fun statusCallback(msg: StatusMessage) {
-        userId?.let { u ->
-            if (u == msg.who) {
-                userOnline.value = msg.status == "ONLINE"
-            }
+        if (userId == msg.who) {
+            userOnline.value = msg.status == "ONLINE"
         }
     }
 

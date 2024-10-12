@@ -1,5 +1,7 @@
 package com.ryanl.chapp.ui
 
+import android.text.format.DateUtils
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -32,13 +34,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.api.models.Message
+import com.ryanl.chapp.persist.StoredAppPrefs
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 private const val TAG = "ChatScreen"
+private const val TIMESTAMP_DIFF_HOURS: Long = 2
 
 @Composable
 fun ChatScreen(
@@ -59,9 +69,13 @@ fun ChatScreen(
 
     // TODO does this change with userId ?
     DisposableEffect(/*toUserId*/Unit) {
-        chatViewModel.enterChatView(toUserId, toDisplayName)
+        if (toUserId != null && toDisplayName != null) {
+            chatViewModel.enterChatView(toUserId, toDisplayName)
+        }
         onDispose {
-            chatViewModel.leaveChatView(toUserId)
+            if (toUserId != null) {
+                chatViewModel.leaveChatView(toUserId)
+            }
         }
     }
 
@@ -74,21 +88,41 @@ fun ChatScreen(
 
 @Composable
 fun ChatHeader(chatViewModel: ChatViewModel, toDisplayName: String?) {
-    Column (
+    Row (
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.LightGray)
             .padding(8.dp),
+        verticalAlignment = Alignment.Bottom
         //verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        //horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon (
             imageVector = Icons.Default.AccountCircle,
             contentDescription = "User picture",
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(70.dp)
         )
-        Text(text = "$toDisplayName")
-        Text(text = "${chatViewModel.userOnline.value}")
+        Text(
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Left,
+            text = "$toDisplayName",
+            modifier = Modifier
+                //.fillMaxWidth(0.8F)
+                .padding(16.dp),
+        )
+        if (chatViewModel.userOnline.value) {
+            Text(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Right,
+                color = Color.DarkGray,
+                text = "ONLINE",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            )
+        }
     }
 }
 
@@ -107,9 +141,51 @@ fun ChatHistory(chatViewModel: ChatViewModel = viewModel()) {
             .fillMaxWidth(),
         state = listState,
     ) {
-        items(chatViewModel.messageHistory) { msg ->
+        itemsIndexed(chatViewModel.messageHistory) {idx, msg ->
+            var prev: Message? = null
+            if (idx > 0) {
+                prev = chatViewModel.messageHistory[idx - 1]
+            }
+            MessageTime(prev, msg)
             MessageBubble(msg)
         }
+    }
+}
+
+val formatterWithCalender = SimpleDateFormat("hh:mm a' on 'yyyy-MM-dd", Locale.US)
+val formatter = SimpleDateFormat("hh:mm a", Locale.US)
+
+private fun isYesterday(d: Date): Boolean {
+    return DateUtils.isToday(d.time + DateUtils.DAY_IN_MILLIS)
+}
+
+private fun isToday(d: Date): Boolean {
+    return DateUtils.isToday(d.time)
+}
+
+@Composable
+fun MessageTime(prev: Message?, cur: Message) {
+    var diff: Long = TIMESTAMP_DIFF_HOURS
+    prev?.let {
+        diff = ((cur.date - prev.date) / 1000) / 3600
+        Log.d(TAG, "Diff... ${prev.date} ${cur.date} $diff")
+    }
+    if (diff >= TIMESTAMP_DIFF_HOURS) {
+        val dateStr = if (isToday(Date(cur.date))) {
+            "Today at ${formatter.format(cur.date)}"
+        } else if (isYesterday(Date(cur.date))) {
+            "Yesterday at ${formatter.format(cur.date)}"
+        } else {
+            formatterWithCalender.format(cur.date)
+        }
+
+        Text(
+            text = dateStr,
+            modifier = Modifier
+                .padding(10.dp)
+                .fillMaxWidth(),
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
