@@ -168,7 +168,7 @@ fun MessageTime(prev: Message?, cur: Message) {
     var diff: Long = TIMESTAMP_DIFF_HOURS
     prev?.let {
         diff = ((cur.date - prev.date) / 1000) / 3600
-        Log.d(TAG, "Diff... ${prev.date} ${cur.date} $diff")
+        //Log.d(TAG, "Diff... ${prev.date} ${cur.date} $diff")
     }
     if (diff >= TIMESTAMP_DIFF_HOURS) {
         val dateStr = if (isToday(Date(cur.date))) {
