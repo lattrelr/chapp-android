@@ -31,6 +31,7 @@ class ChatViewModel : ViewModel() {
     // - History update is locked so subscribe will suspend until we finish updating.
     // - We will keep track of all msg id hashes in a set, in case we got a message
     // - While history was loading, we won't show it twice.
+    // TODO remove display name var
     fun enterChatView(toUserId: String, toUserDisplayName: String) {
         viewModelScope.launch {
             Historian.subscribeUserStatus(toUserId, ::statusCallback)
@@ -48,7 +49,6 @@ class ChatViewModel : ViewModel() {
 
     fun leaveChatView(toUserId: String) {
         viewModelScope.launch {
-            // TODO don't really like these member vars ?
             userOnline.value = false
             Historian.unsubscribeUserStatus(toUserId)
             Historian.unsubscribeUserText(toUserId)

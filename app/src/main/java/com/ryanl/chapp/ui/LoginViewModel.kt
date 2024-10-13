@@ -29,7 +29,6 @@ class LoginViewModel() : ViewModel() {
                 StoredAppPrefs.setToken(response.token)
                 StoredAppPrefs.setUserId(response.userId)
                 // Start the socket now that we have a valid token
-                // TODO start historian first to subscribe to websocket messages
                 WebsocketClient.runForever(response.token)
                 // Trigger the UI to move to the next activity
                 onDone(true)
@@ -43,6 +42,7 @@ class LoginViewModel() : ViewModel() {
         StoredAppPrefs.setUserId("")
         WebsocketClient.closeSocket()
         // TODO close historian!
+        // TODO wipe database !?  Don't clear userId on logout, and if it changes on login wipe db!!
     }
 
     fun checkForActiveSession(onDone: (Boolean) -> Unit) {
