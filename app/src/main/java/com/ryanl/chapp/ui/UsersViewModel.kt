@@ -2,6 +2,7 @@ package com.ryanl.chapp.ui
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.persist.StoredAppPrefs
@@ -16,17 +17,13 @@ import kotlinx.coroutines.sync.withLock
 private const val TAG = "LoginViewModel"
 
 class UsersViewModel : ViewModel() {
-    var userList = mutableStateListOf<User>()
-        private set
+    val userMap = mutableStateMapOf<String, User?>()
     private val statusMutex = Mutex()
 
     private suspend fun statusCallback(msg: StatusMessage) {
         statusMutex.withLock {
-            for ((idx, user) in userList.withIndex()) {
-                if (user.id == msg.who) {
-                    userList[idx] = userList[idx].copy(online = (msg.status == "ONLINE"))
-                    break
-                }
+            if (userMap.contains(msg.who)) {
+                userMap[msg.who] = userMap[msg.who]?.copy(online = (msg.status == "ONLINE"))
             }
         }
     }
@@ -46,11 +43,11 @@ class UsersViewModel : ViewModel() {
 
     private suspend fun fetchUsers() {
         statusMutex.withLock {
-            userList.clear()
+            userMap.clear()
             try {
                 Api.getUsers().forEach { user ->
                     if (user.id != StoredAppPrefs.getUserId()) {
-                        userList.add(user)
+                        userMap[user.id] = user
                     }
                 }
             } catch (e: Exception) {

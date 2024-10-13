@@ -61,7 +61,7 @@ fun HistoryScreen(
         }
     }
 
-    if (historyViewModel.historyList.size == 0) {
+    if (historyViewModel.historyMap.size == 0) {
         Column (
             modifier = Modifier
                 .fillMaxWidth()
@@ -81,8 +81,10 @@ fun HistoryScreen(
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-            items(historyViewModel.historyList) { h ->
-                HistoryRow(h, navController)
+            items(historyViewModel.historyMap.entries.toList()) { h ->
+                h.value?.let {
+                    HistoryRow(it, navController)
+                }
             }
         }
     }

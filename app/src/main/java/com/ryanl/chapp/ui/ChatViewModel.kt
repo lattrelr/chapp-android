@@ -37,7 +37,7 @@ class ChatViewModel : ViewModel() {
             messageMutex.withLock {
                 messageHistory.clear()
                 Historian.subscribeUserText(toUserId, ::textCallback)
-                Historian.syncUserHistory(toUserId)
+                Historian.addUserHistory(toUserId)
                 for (msg in Historian.getConversation(toUserId)) {
                     messageHistory.add(msg)
                     messageHistorySet.add(msg.id)

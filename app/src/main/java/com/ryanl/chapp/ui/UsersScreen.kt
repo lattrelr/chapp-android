@@ -57,8 +57,10 @@ fun UsersScreen(
           .fillMaxWidth()
           .fillMaxHeight()*/
     ) {
-        items(usersViewModel.userList) { user ->
-            UserRow(user, navController)
+        items(usersViewModel.userMap.entries.toList()) { user ->
+            user.value?.let {
+                UserRow(it, navController)
+            }
         }
     }
 }

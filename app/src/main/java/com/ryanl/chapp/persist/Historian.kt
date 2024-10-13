@@ -20,6 +20,7 @@ object Historian {
     private val subscriberMutex = Mutex()
     private val subscriberMapText: MutableMap<String,suspend (TextMessage) -> Unit> = mutableMapOf()
     private val subscriberMapStatus: MutableMap<String,suspend (StatusMessage) -> Unit> = mutableMapOf()
+    private val subscriberSetHistory: MutableSet<suspend (String) -> Unit> = mutableSetOf()
     private lateinit var db: AppDatabase
     // TODO add map of user status, and keep latest status here...(in memory database? - inMemoryDatabaseBuilder)
 
@@ -100,11 +101,12 @@ object Historian {
         }
     }
 
-    suspend fun syncUserHistory(userId: String) {
+    private suspend fun syncUserHistory(userId: String) {
         historyMutex.withLock {
             syncUserData(userId)
             syncUserMessages(userId)
         }
+        notifyHistoryChanged(userId)
     }
 
     private suspend fun addMsgHistory(msg: com.ryanl.chapp.persist.models.Message): Boolean {
@@ -117,11 +119,26 @@ object Historian {
         }
     }
 
+    suspend fun addUserHistory(userId: String): Boolean {
+        if (getHistory(userId) == null) {
+            syncUserHistory(userId)
+            return true
+        }
+        return false
+    }
+
     private suspend fun newTextCallback(msg: TextMessage) {
         // TODO if from new user, sync user and notify history changed...call in new coroutine
-        historyMutex.withLock {
+        kotlinx.coroutines.MainScope().launch {
             Log.d(TAG, "Got text $msg")
-            addMsgHistory(Message(msg))
+            // Check if we already have history for this user (not including the logged in user)
+            val userId = if (msg.to == StoredAppPrefs.getUserId()) msg.from else msg.to
+            if (!addUserHistory(userId)) {
+                historyMutex.withLock {
+                    addMsgHistory(Message(msg))
+                }
+                notifyHistoryChanged(userId)
+            }
         }
         // Keep out of historyMutex so we don't deadlock
         notifyNewText(msg)
@@ -135,7 +152,13 @@ object Historian {
     }
 
     private suspend fun notifyHistoryChanged(userId: String) {
-        // TODO if we updated the history of a user, let someone who cares know
+        // TODO subscribed func should use a coroutine if it is long
+        Log.d(TAG, "History updated for $userId")
+        subscriberMutex.withLock {
+            subscriberSetHistory.forEach { cb ->
+                cb(userId)
+            }
+        }
     }
 
     private suspend fun notifyNewText(msg: TextMessage) {
@@ -188,6 +211,20 @@ object Historian {
         }
     }
 
+    suspend fun subscribeHistory(cb: suspend (String) -> Unit) {
+        Log.d(TAG, "Watching for history")
+        subscriberMutex.withLock {
+            subscriberSetHistory.add(cb)
+        }
+    }
+
+    suspend fun unsubscribeHistory(cb: suspend (String) -> Unit) {
+        Log.d(TAG, "No longer watching history")
+        subscriberMutex.withLock {
+            subscriberSetHistory.remove(cb)
+        }
+    }
+
     fun start(context: Context) {
         // We need to set the db not-in-a-thread since we will crash if we use it before
         // it is initialized
@@ -214,7 +251,11 @@ object Historian {
         }
     }
 
-    suspend fun getHistory(): List<History> {
+    suspend fun getHistory(userId: String): History? {
+        return db.historyDao().getHistory(userId)
+    }
+
+    suspend fun getHistories(): List<History> {
         return db.historyDao().getHistories()
     }
 

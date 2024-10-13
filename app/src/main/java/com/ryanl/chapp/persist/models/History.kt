@@ -10,3 +10,6 @@ data class History(
     var displayname: String,
     var username: String
 )
+
+// TODO add read/unread state to user if the chatview hasn't been opened since a message was
+// TODO rxed
