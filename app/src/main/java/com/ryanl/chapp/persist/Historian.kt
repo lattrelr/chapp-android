@@ -14,6 +14,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/*
+This object is the source of truth for chat history.  Instead of updating the db and fetching
+from the server in the view, we'll do it here on startup and on changes.  Since both the ChatView
+and the HistoryView need up-to-date data, we do it once here instead of every time you open a view.
+
+Architecture is now sort of like this:
+
+            AppDatabase
+                ^
+                |         --> ChatViewModel
+Websocket --> Historian --|
+                |         --> HistoryViewModel
+               API
+
+ */
 object Historian {
     private const val TAG = "Historian"
     private val historyMutex = Mutex()

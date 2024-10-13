@@ -30,6 +30,7 @@ class UsersViewModel : ViewModel() {
 
     fun enterUsersView() {
         viewModelScope.launch {
+            // TODO subscribe to historian instead of websocket.
             WebsocketClient.subscribeToStatus(::statusCallback)
             fetchUsers()
         }

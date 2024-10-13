@@ -18,6 +18,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
+// TODO deal with popUpTo (inclusive = true) and launchSingleTop to optimize stack
+// TODO remove the hacks to disable back in the history and user views, pop stacks instead.
 @Composable
 fun AppNavigation(navController: NavHostController) {
     NavHost(
