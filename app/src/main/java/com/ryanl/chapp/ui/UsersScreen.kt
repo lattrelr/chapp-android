@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -85,23 +86,30 @@ fun UserRow(user: User, navController: NavHostController) {
                 contentDescription = "User picture",
                 modifier = Modifier.size(60.dp)
             )
-            Text(
-                text = user.displayname,
+            Row (
                 modifier = Modifier
-                    .fillMaxWidth(0.8F)
-                    .padding(16.dp),
-                textAlign = TextAlign.Left,
-            )
-            if (user.online) {
-                Box(
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ){
+                Text(
+                    text = user.displayname,
                     modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        //.fillMaxWidth()
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color.Green),
-                ) {
+                        .fillMaxWidth(0.8F)
+                        .padding(16.dp),
+                    textAlign = TextAlign.Left,
+                )
+                if (user.online) {
+                    Box(
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .align(Alignment.CenterVertically)
+                            //.fillMaxWidth()
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color.Green)
+                    ) {
 
+                    }
                 }
             }
         }

@@ -46,7 +46,9 @@ class HistoryViewModel : ViewModel() {
 
         val db = AppDatabase.getInstance()
         db?.messageDao()?.getConversation(userId, StoredAppPrefs.getUserId())?.let { conv ->
-            lastMsg = conv.last()
+            if (conv.isNotEmpty()) {
+                lastMsg = conv.last()
+            }
         }
 
         return lastMsg

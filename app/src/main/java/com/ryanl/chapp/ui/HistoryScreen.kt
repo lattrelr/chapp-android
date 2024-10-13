@@ -63,22 +63,27 @@ fun HistoryScreen(
 
     if (historyViewModel.historyList.size == 0) {
         Column (
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("No conversations...")
-            Button(onClick = { navController.navigate("users") }) {
-                Text("Search")
+            Button(onClick = {
+                navController.navigate("users")
+            }) {
+                Text("Find")
             }
         }
-    }
-
-    LazyColumn (
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-    ) {
-        items(historyViewModel.historyList) { h ->
-            HistoryRow(h, navController)
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+        ) {
+            items(historyViewModel.historyList) { h ->
+                HistoryRow(h, navController)
+            }
         }
     }
 }
