@@ -10,7 +10,7 @@ import com.ryanl.chapp.persist.models.Message
 @Database(entities = [
     History::class,
     Message::class
-    ], version = 4)
+    ], version = 5)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
     abstract fun messageDao(): MessageDao
@@ -19,7 +19,6 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // TODO just make this "open" and call from main activity so we don't need context
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -34,7 +33,5 @@ abstract class AppDatabase : RoomDatabase() {
                 instance
             }
         }
-
-        fun getInstance(): AppDatabase? = INSTANCE
     }
 }

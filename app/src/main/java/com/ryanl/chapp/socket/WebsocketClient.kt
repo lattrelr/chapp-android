@@ -30,8 +30,8 @@ object WebsocketClient {
     private const val TAG = "WebsocketClient"
     private const val SERVER_NAME = "10.0.2.2"
     private const val PORT = 30000
-    private val subscriberMapText: MutableMap<String,suspend (TextMessage) -> Unit> = mutableMapOf()
     private val subscriberSetStatus: MutableSet<suspend (StatusMessage) -> Unit> = mutableSetOf()
+    private val subscriberSetText: MutableSet<suspend (TextMessage) -> Unit> = mutableSetOf()
     private val subscriberMutex = Mutex()
     private val client = HttpClient(CIO) {
         install(WebSockets) {
@@ -125,20 +125,6 @@ object WebsocketClient {
         Log.d(TAG, "Sent text message")
     }
 
-    suspend fun subscribeFromUser(fromUser: String, cb: suspend (TextMessage) -> Unit) {
-        Log.d(TAG, "Watching for $fromUser")
-        subscriberMutex.withLock {
-            subscriberMapText[fromUser] = cb;
-        }
-    }
-
-    suspend fun unsubscribeFromUser(fromUser: String) {
-        Log.d(TAG, "No longer watching $fromUser")
-        subscriberMutex.withLock {
-            subscriberMapText.remove(fromUser)
-        }
-    }
-
     suspend fun subscribeToStatus(cb: suspend (StatusMessage) -> Unit) {
         Log.d(TAG, "Watching for status")
         subscriberMutex.withLock {
@@ -153,11 +139,24 @@ object WebsocketClient {
         }
     }
 
+    suspend fun subscribeToText(cb: suspend (TextMessage) -> Unit) {
+        Log.d(TAG, "Watching for texts")
+        subscriberMutex.withLock {
+            subscriberSetText.add(cb)
+        }
+    }
+
+    suspend fun unsubscribeFromText(cb: suspend (TextMessage) -> Unit) {
+        Log.d(TAG, "No longer watching texts")
+        subscriberMutex.withLock {
+            subscriberSetText.remove(cb)
+        }
+    }
+
     private suspend fun sendTextToSubscribers(msg: TextMessage) {
         subscriberMutex.withLock {
-            subscriberMapText[msg.from]?.let {
-                Log.d(TAG, "subscriberMap has ${msg.from}")
-                it(msg)
+            subscriberSetText.forEach { cb ->
+                cb(msg)
             }
         }
     }

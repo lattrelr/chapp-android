@@ -40,7 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ryanl.chapp.api.models.Message
+import com.ryanl.chapp.persist.models.Message
 import com.ryanl.chapp.persist.StoredAppPrefs
 import java.text.SimpleDateFormat
 import java.util.Date

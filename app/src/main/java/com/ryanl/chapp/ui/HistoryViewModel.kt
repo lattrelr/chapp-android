@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.persist.AppDatabase
+import com.ryanl.chapp.persist.Historian
 import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.persist.models.History
 import com.ryanl.chapp.persist.models.Message
@@ -26,32 +27,16 @@ class HistoryViewModel : ViewModel() {
     fun enterUsersView() {
         viewModelScope.launch {
             historyList.clear()
-            val db = AppDatabase.getInstance()
-            db?.historyDao()?.getHistories()?.let { hist ->
-                for (h in hist) {
-                    val lastMsg: Message? = getLastMessage(h.id)
-                    historyList.add(HistoryListItem(
-                        h.id,
-                        h.displayname,
-                        lastMsg?.text,
-                        lastMsg?.date
-                    ))
-                }
+            for (h in Historian.getHistory()) {
+                val lastMsg: Message? = Historian.getLastMessage(h.id)
+                historyList.add(HistoryListItem(
+                    h.id,
+                    h.displayname,
+                    lastMsg?.text,
+                    lastMsg?.date
+                ))
             }
         }
-    }
-
-    private suspend fun getLastMessage(userId: String): Message? {
-        var lastMsg: Message? = null
-
-        val db = AppDatabase.getInstance()
-        db?.messageDao()?.getConversation(userId, StoredAppPrefs.getUserId())?.let { conv ->
-            if (conv.isNotEmpty()) {
-                lastMsg = conv.last()
-            }
-        }
-
-        return lastMsg
     }
 
     fun leaveUsersView() {

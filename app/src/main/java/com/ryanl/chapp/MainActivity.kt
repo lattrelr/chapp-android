@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.ryanl.chapp.persist.AppDatabase
+import com.ryanl.chapp.persist.Historian
 import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.ui.AppNavDrawer
 import com.ryanl.chapp.ui.AppNavigation
@@ -25,7 +26,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         StoredAppPrefs.open(applicationContext)
-        AppDatabase.getInstance(applicationContext)
+        // TODO stop on destroy?
+        Historian.start(applicationContext)
         setContent {
             val navController = rememberNavController()
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

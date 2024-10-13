@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class History(
     // User id for primary key
     @PrimaryKey val id: String,
-    val displayname: String
+    var displayname: String,
+    var username: String
 )

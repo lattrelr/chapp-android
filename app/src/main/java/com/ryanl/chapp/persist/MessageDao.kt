@@ -16,4 +16,12 @@ interface MessageDao {
         "ORDER BY date"
     )
     suspend fun getConversation(user1: String, user2: String): List<Message>
+    @Query(
+        "SELECT * FROM messages WHERE " +
+        "([from]==:user1 AND [to] == :user2) OR " +
+        "([from]==:user2 AND [to] == :user1) " +
+        "ORDER BY date DESC " +
+        "LIMIT 1"
+    )
+    suspend fun getLastConversationMessage(user1: String, user2: String): Message?
 }

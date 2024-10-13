@@ -6,5 +6,6 @@ import kotlinx.serialization.json.Json
 data class User(
     val displayname: String = "",
     val id: String = "",
-    val online: Boolean = false
+    val online: Boolean = false,
+    val username: String = ""
 )
