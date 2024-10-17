@@ -57,7 +57,11 @@ object Api {
     suspend fun getUsers(): List<User> {
         // TODO check if response isSuccessful ?
         Log.d(TAG, "Getting users...")
-        return usersService.getUsers()
+        val resp = usersService.getUsers()
+        if (resp.isSuccessful) {
+            return resp.body() ?: listOf()
+        }
+        return listOf()
     }
 
     suspend fun getUser(userId: String): User? {
@@ -71,12 +75,20 @@ object Api {
 
     suspend fun getConversation(user1: String, user2: String): List<Message> {
         Log.d(TAG, "Getting conversation...")
-        return messagesService.getConversation(user1, user2)
+        val resp = messagesService.getConversation(user1, user2)
+        if (resp.isSuccessful) {
+            return resp.body() ?: listOf()
+        }
+        return listOf()
     }
 
     suspend fun getConversationAfter(user1: String, user2: String, timestamp: Long): List<Message> {
         Log.d(TAG, "Getting conversation for $user1 $user2 after $timestamp...")
-        return messagesService.getConversationAfter(user1, user2, timestamp)
+        val resp = messagesService.getConversationAfter(user1, user2, timestamp)
+        if (resp.isSuccessful) {
+            return resp.body() ?: listOf()
+        }
+        return listOf()
     }
 
     /*fun getUsers(): List<User> {

@@ -17,10 +17,12 @@ import androidx.navigation.compose.rememberNavController
 import com.ryanl.chapp.persist.AppDatabase
 import com.ryanl.chapp.persist.Historian
 import com.ryanl.chapp.persist.StoredAppPrefs
+import com.ryanl.chapp.socket.ConnectionManager
 import com.ryanl.chapp.ui.AppNavDrawer
 import com.ryanl.chapp.ui.AppNavigation
 import com.ryanl.chapp.ui.TopBarNav
 import com.ryanl.chapp.ui.theme.ChappAndroidTheme
+import java.sql.Connection
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +30,8 @@ class MainActivity : ComponentActivity() {
         StoredAppPrefs.open(applicationContext)
         // TODO stop on destroy?
         Historian.start(applicationContext)
+        // TODO delete this
+        ConnectionManager.test(true)
         setContent {
             val navController = rememberNavController()
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

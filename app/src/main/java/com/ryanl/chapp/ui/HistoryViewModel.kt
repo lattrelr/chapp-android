@@ -29,7 +29,7 @@ class HistoryViewModel : ViewModel() {
         viewModelScope.launch {
             historyMutex.withLock {
                 historyMap.clear()
-                Historian.subscribeHistory(::onHistoryChanged)
+                Historian.historySub.subscribe(::onHistoryChanged)
                 for (history in Historian.getHistories()) {
                     updateHistory(history)
                 }
@@ -39,7 +39,7 @@ class HistoryViewModel : ViewModel() {
 
     fun leaveUsersView() {
         viewModelScope.launch {
-            Historian.unsubscribeHistory(::onHistoryChanged)
+            Historian.historySub.unsubscribe(::onHistoryChanged)
         }
     }
 

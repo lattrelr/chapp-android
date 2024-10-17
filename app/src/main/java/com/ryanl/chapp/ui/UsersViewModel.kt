@@ -31,14 +31,14 @@ class UsersViewModel : ViewModel() {
     fun enterUsersView() {
         viewModelScope.launch {
             // TODO subscribe to historian instead of websocket.
-            WebsocketClient.subscribeToStatus(::statusCallback)
+            WebsocketClient.statusSub.subscribe(::statusCallback)
             fetchUsers()
         }
     }
 
     fun leaveUsersView() {
         viewModelScope.launch {
-            WebsocketClient.unsubscribeFromStatus(::statusCallback)
+            WebsocketClient.statusSub.unsubscribe(::statusCallback)
         }
     }
 

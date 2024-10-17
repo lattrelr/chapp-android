@@ -34,10 +34,10 @@ class ChatViewModel : ViewModel() {
     // TODO remove display name var
     fun enterChatView(toUserId: String, toUserDisplayName: String) {
         viewModelScope.launch {
-            Historian.subscribeUserStatus(toUserId, ::statusCallback)
+            Historian.statusSub.subscribe(toUserId, ::statusCallback)
             messageMutex.withLock {
                 messageHistory.clear()
-                Historian.subscribeUserText(toUserId, ::textCallback)
+                Historian.textSub.subscribe(toUserId, ::textCallback)
                 Historian.addUserHistory(toUserId)
                 for (msg in Historian.getConversation(toUserId)) {
                     messageHistory.add(msg)
@@ -50,8 +50,8 @@ class ChatViewModel : ViewModel() {
     fun leaveChatView(toUserId: String) {
         viewModelScope.launch {
             userOnline.value = false
-            Historian.unsubscribeUserStatus(toUserId)
-            Historian.unsubscribeUserText(toUserId)
+            Historian.statusSub.unsubscribe(toUserId)
+            Historian.textSub.unsubscribe(toUserId)
             messageHistory.clear()
         }
     }

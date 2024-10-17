@@ -1,9 +1,11 @@
 package com.ryanl.chapp.socket
 
+import android.net.http.UrlRequest.Status
 import android.util.Log
 import com.ryanl.chapp.socket.models.Message
 import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
+import com.ryanl.chapp.util.Subscription
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
@@ -20,8 +22,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.EOFException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
@@ -30,9 +30,8 @@ object WebsocketClient {
     private const val TAG = "WebsocketClient"
     private const val SERVER_NAME = "10.0.2.2"
     private const val PORT = 30000
-    private val subscriberSetStatus: MutableSet<suspend (StatusMessage) -> Unit> = mutableSetOf()
-    private val subscriberSetText: MutableSet<suspend (TextMessage) -> Unit> = mutableSetOf()
-    private val subscriberMutex = Mutex()
+    val statusSub = Subscription<suspend (StatusMessage) -> Unit, StatusMessage>("Status")
+    val textSub = Subscription<suspend (TextMessage) -> Unit, TextMessage>("Text")
     private val client = HttpClient(CIO) {
         install(WebSockets) {
             contentConverter = KotlinxWebsocketSerializationConverter(Json)
@@ -103,8 +102,8 @@ object WebsocketClient {
         try {
             val msg = Json.decodeFromString<Message>(textFrame.readText())
             when (msg.type) {
-                "text" -> sendTextToSubscribers(msg as TextMessage)
-                "status" -> sendStatusToSubscribers(msg as StatusMessage)
+                "text" -> textSub.notifyAll(msg as TextMessage)
+                "status" -> statusSub.notifyAll(msg as StatusMessage)
             }
         } catch (e: SerializationException) {
             Log.e(TAG, "Message issue $e")
@@ -123,51 +122,6 @@ object WebsocketClient {
             )
         )
         Log.d(TAG, "Sent text message")
-    }
-
-    suspend fun subscribeToStatus(cb: suspend (StatusMessage) -> Unit) {
-        Log.d(TAG, "Watching for status")
-        subscriberMutex.withLock {
-            subscriberSetStatus.add(cb)
-        }
-    }
-
-    suspend fun unsubscribeFromStatus(cb: suspend (StatusMessage) -> Unit) {
-        Log.d(TAG, "No longer watching status")
-        subscriberMutex.withLock {
-            subscriberSetStatus.remove(cb)
-        }
-    }
-
-    suspend fun subscribeToText(cb: suspend (TextMessage) -> Unit) {
-        Log.d(TAG, "Watching for texts")
-        subscriberMutex.withLock {
-            subscriberSetText.add(cb)
-        }
-    }
-
-    suspend fun unsubscribeFromText(cb: suspend (TextMessage) -> Unit) {
-        Log.d(TAG, "No longer watching texts")
-        subscriberMutex.withLock {
-            subscriberSetText.remove(cb)
-        }
-    }
-
-    private suspend fun sendTextToSubscribers(msg: TextMessage) {
-        subscriberMutex.withLock {
-            subscriberSetText.forEach { cb ->
-                cb(msg)
-            }
-        }
-    }
-
-    private suspend fun sendStatusToSubscribers(msg: StatusMessage) {
-        Log.d(TAG, "Got status $msg")
-        subscriberMutex.withLock {
-            subscriberSetStatus.forEach { cb ->
-                cb(msg)
-            }
-        }
     }
 
     // TODO send a notification if no viewmodels are registered? Or if to a user that is not in a registered viewmodel

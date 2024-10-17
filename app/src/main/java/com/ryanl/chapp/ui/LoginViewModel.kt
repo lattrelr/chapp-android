@@ -21,7 +21,7 @@ class LoginViewModel() : ViewModel() {
                 response = Api.login(username, password)
                 Log.d(TAG, "Login response: $response")
             }  catch (e: Exception) {
-                Log.e(TAG, "Get Users FAILED - ${e.message}")
+                Log.e(TAG, "Login FAILED - ${e.message}")
             }
 
             response?.let {

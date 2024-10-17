@@ -7,9 +7,13 @@ import androidx.room.rxjava3.EmptyResultSetException
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.persist.models.History
 import com.ryanl.chapp.persist.models.Message
+import com.ryanl.chapp.socket.ConnectionManager
 import com.ryanl.chapp.socket.WebsocketClient
 import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
+import com.ryanl.chapp.util.Subscription
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,11 +36,11 @@ Websocket --> Historian --|
 object Historian {
     private const val TAG = "Historian"
     private val historyMutex = Mutex()
-    private val subscriberMutex = Mutex()
-    private val subscriberMapText: MutableMap<String,suspend (TextMessage) -> Unit> = mutableMapOf()
-    private val subscriberMapStatus: MutableMap<String,suspend (StatusMessage) -> Unit> = mutableMapOf()
-    private val subscriberSetHistory: MutableSet<suspend (String) -> Unit> = mutableSetOf()
+    val statusSub = Subscription<String, StatusMessage>("Status")
+    val textSub = Subscription<String, TextMessage>("Text")
+    val historySub = Subscription<suspend (String) -> Unit, String>("History")
     private lateinit var db: AppDatabase
+    private var syncJob: Job? = null
     // TODO add map of user status, and keep latest status here...(in memory database? - inMemoryDatabaseBuilder)
 
     private suspend fun syncUserMessages(userId: String) {
@@ -169,74 +173,30 @@ object Historian {
     private suspend fun notifyHistoryChanged(userId: String) {
         // TODO subscribed func should use a coroutine if it is long
         Log.d(TAG, "History updated for $userId")
-        subscriberMutex.withLock {
-            subscriberSetHistory.forEach { cb ->
-                cb(userId)
-            }
-        }
+        historySub.notifyAll(userId)
     }
 
     private suspend fun notifyNewText(msg: TextMessage) {
-        subscriberMutex.withLock {
-            subscriberMapText[msg.from]?.let {
-                Log.d(TAG, "subscriberMapText has ${msg.from}")
-                it(msg)
-            }
-            subscriberMapText[msg.to]?.let {
-                Log.d(TAG, "subscriberMapText has ${msg.to}")
-                it(msg)
-            }
-        }
+        textSub.notifyOne(msg.to, msg)
+        textSub.notifyOne(msg.from, msg)
     }
 
     private suspend fun notifyNewStatus(msg: StatusMessage) {
-        subscriberMutex.withLock {
-            subscriberMapStatus[msg.who]?.let {
-                Log.d(TAG, "subscriberMapStatus has ${msg.who}")
-                it(msg)
+        statusSub.notifyOne(msg.who, msg)
+    }
+
+    private suspend fun onConnectionChanged(connected: Boolean) {
+        kotlinx.coroutines.MainScope().launch {
+            if (connected) {
+                syncJob?.cancelAndJoin()
+                syncJob = kotlinx.coroutines.MainScope().launch {
+                    // TODO try and if connection issue or failure try again
+                    // TODO after X seconds
+                    syncHistory()
+                }
+            } else {
+                syncJob?.cancelAndJoin()
             }
-        }
-    }
-
-    suspend fun subscribeUserText(fromUser: String, cb: suspend (TextMessage) -> Unit) {
-        Log.d(TAG, "Watching for $fromUser texts")
-        subscriberMutex.withLock {
-            subscriberMapText[fromUser] = cb;
-        }
-    }
-
-    suspend fun unsubscribeUserText(fromUser: String) {
-        Log.d(TAG, "No longer watching $fromUser texts")
-        subscriberMutex.withLock {
-            subscriberMapText.remove(fromUser)
-        }
-    }
-
-    suspend fun subscribeUserStatus(userId: String, cb: suspend (StatusMessage) -> Unit) {
-        Log.d(TAG, "Watching for $userId status")
-        subscriberMutex.withLock {
-            subscriberMapStatus[userId] = cb;
-        }
-    }
-
-    suspend fun unsubscribeUserStatus(userId: String) {
-        Log.d(TAG, "No longer watching $userId status")
-        subscriberMutex.withLock {
-            subscriberMapStatus.remove(userId)
-        }
-    }
-
-    suspend fun subscribeHistory(cb: suspend (String) -> Unit) {
-        Log.d(TAG, "Watching for history")
-        subscriberMutex.withLock {
-            subscriberSetHistory.add(cb)
-        }
-    }
-
-    suspend fun unsubscribeHistory(cb: suspend (String) -> Unit) {
-        Log.d(TAG, "No longer watching history")
-        subscriberMutex.withLock {
-            subscriberSetHistory.remove(cb)
         }
     }
 
@@ -245,16 +205,16 @@ object Historian {
         // it is initialized
         db = AppDatabase.getInstance(context)
         kotlinx.coroutines.MainScope().launch {
-            WebsocketClient.subscribeToText(::newTextCallback)
-            WebsocketClient.subscribeToStatus(::newStatusCallback)
-            syncHistory()
+            WebsocketClient.textSub.subscribe(::newTextCallback)
+            WebsocketClient.statusSub.subscribe(::newStatusCallback)
+            ConnectionManager.sub.subscribe(::onConnectionChanged)
         }
     }
 
     fun stop() {
         kotlinx.coroutines.MainScope().launch {
-            WebsocketClient.unsubscribeFromText(::newTextCallback)
-            WebsocketClient.unsubscribeFromStatus(::newStatusCallback)
+            WebsocketClient.textSub.unsubscribe(::newTextCallback)
+            WebsocketClient.statusSub.unsubscribe(::newStatusCallback)
         }
     }
 
