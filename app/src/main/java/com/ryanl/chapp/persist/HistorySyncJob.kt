@@ -52,7 +52,7 @@ object HistorySyncJob {
     }
 
     // TODO start/stop on foreground?
-    private suspend fun onConnectionChanged(connected: Boolean) {
+    suspend fun onConnectionChanged(connected: Boolean) {
         if (connected) {
             start()
             Historian.getHistories().forEach { h ->
@@ -62,4 +62,6 @@ object HistorySyncJob {
             stop()
         }
     }
+
+    // TODO subscribe to connection changes, or call from connection manager
 }

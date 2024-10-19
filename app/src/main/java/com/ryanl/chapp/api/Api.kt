@@ -110,7 +110,7 @@ object Api {
                 return resp.body() ?: listOf()
             }
         }  catch (e: ConnectException) {
-            Log.e(TAG,"Failed to conversation")
+            Log.e(TAG,"Failed to get conversation")
         }
         return null
     }

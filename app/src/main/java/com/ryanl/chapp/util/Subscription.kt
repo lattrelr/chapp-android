@@ -4,8 +4,9 @@ import android.util.Log
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class Subscription<K,P>(val name: String) {
+open class Subscription<K,P>(val name: String) {
     private val subscriberMap: MutableMap<K, suspend (P) -> Unit> = mutableMapOf()
+    private val subscriberSet: MutableSet<suspend (P) -> Unit> = mutableSetOf()
     private val subscriberMutex = Mutex()
     private val TAG = "Subscription[$name]"
 
@@ -19,7 +20,7 @@ class Subscription<K,P>(val name: String) {
     suspend fun subscribe(cb: suspend (P) -> Unit) {
         Log.d(TAG, "Subscribed")
         subscriberMutex.withLock {
-            subscriberMap[cb as K] = cb
+            subscriberSet.add(cb)
         }
     }
 
@@ -30,21 +31,22 @@ class Subscription<K,P>(val name: String) {
         }
     }
 
-    suspend fun notify(cb: (Map<K, suspend (P) -> Unit>) -> Unit) {
+    suspend fun unsubscribe(cb: suspend (P) -> Unit) {
+        Log.d(TAG, "Unsubscribed")
         subscriberMutex.withLock {
-            cb(subscriberMap)
+            subscriberSet.remove(cb)
         }
     }
 
-    suspend fun notifyAll(msg: P) {
+    protected suspend fun notifyAll(msg: P) {
         subscriberMutex.withLock {
-            subscriberMap.forEach { (key, cb) ->
+            subscriberSet.forEach { cb ->
                 cb(msg)
             }
         }
     }
 
-    suspend fun notifyOne(key: K, msg: P) {
+    protected suspend fun notifyOne(key: K, msg: P) {
         subscriberMutex.withLock {
             subscriberMap[key]?.let { cb ->
                 Log.d(TAG, "Send to $key")

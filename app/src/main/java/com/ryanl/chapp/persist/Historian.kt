@@ -8,6 +8,7 @@ import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.persist.models.History
 import com.ryanl.chapp.persist.models.Message
 import com.ryanl.chapp.socket.ConnectionManager
+import com.ryanl.chapp.socket.TextProvider
 import com.ryanl.chapp.socket.WebsocketClient
 import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
@@ -33,19 +34,16 @@ Architecture is now sort of like this:
             AppDatabase
                 ^
                 |         --> ChatViewModel
-Websocket --> Historian --|
+TextProvider-> Historian --|
                 |         --> HistoryViewModel
                API
 
  */
-object Historian {
+object Historian: Subscription<String, String>("history") {
     private const val TAG = "Historian"
     private val historyMutex = Mutex()
-    val statusSub = Subscription<String, StatusMessage>("Status")
-    val textSub = Subscription<String, TextMessage>("Text")
-    val historySub = Subscription<suspend (String) -> Unit, String>("History")
     private lateinit var db: AppDatabase
-    // TODO add map of user status, and keep latest status here...(in memory database? - inMemoryDatabaseBuilder)
+    // TODO add map of user status? and keep latest status here...(in memory database? - inMemoryDatabaseBuilder)
 
     private suspend fun syncUserMessages(userId: String): Boolean {
         var startTime: Long = 0
@@ -124,12 +122,13 @@ object Historian {
 
     suspend fun syncUserHistory(userId: String): Boolean {
         historyMutex.withLock {
-            if (!syncUserData(userId) ||
-                    !syncUserMessages(userId)) {
+            // Sync userData second so the last action is adding the user to the db
+            if (!syncUserMessages(userId) || !syncUserData(userId)) {
                 return false
             }
         }
-        notifyHistoryChanged(userId)
+        notifyAll(userId)
+        notifyOne(userId, userId)
         return true
     }
 
@@ -141,6 +140,7 @@ object Historian {
         }
     }
 
+    // TODO move this to syncJob ?
     private suspend fun newTextCallback(msg: TextMessage) {
         Log.d(TAG, "Got text $msg")
         // Check if we already have history for this user (not including the logged in user)
@@ -149,32 +149,7 @@ object Historian {
             historyMutex.withLock {
                 addMsgHistory(Message(msg))
             }
-            notifyHistoryChanged(userId)
         }
-        // Keep out of historyMutex so we don't deadlock
-        notifyNewText(msg)
-    }
-
-    private suspend fun newStatusCallback(msg: StatusMessage) {
-        historyMutex.withLock {
-            Log.d(TAG, "Got status $msg")
-        }
-        notifyNewStatus(msg)
-    }
-
-    private suspend fun notifyHistoryChanged(userId: String) {
-        // TODO subscribed func should use a coroutine if it is long
-        Log.d(TAG, "History updated for $userId")
-        historySub.notifyAll(userId)
-    }
-
-    private suspend fun notifyNewText(msg: TextMessage) {
-        textSub.notifyOne(msg.to, msg)
-        textSub.notifyOne(msg.from, msg)
-    }
-
-    private suspend fun notifyNewStatus(msg: StatusMessage) {
-        statusSub.notifyOne(msg.who, msg)
     }
 
     fun start(context: Context) {
@@ -182,17 +157,13 @@ object Historian {
         // it is initialized
         db = AppDatabase.getInstance(context)
         kotlinx.coroutines.MainScope().launch {
-            WebsocketClient.textSub.subscribe(::newTextCallback)
-            WebsocketClient.statusSub.subscribe(::newStatusCallback)
-            //ConnectionManager.sub.subscribe(::onConnectionChanged)
+            TextProvider.subscribe(::newTextCallback)
         }
     }
 
     fun stop() {
         kotlinx.coroutines.MainScope().launch {
-            WebsocketClient.textSub.unsubscribe(::newTextCallback)
-            WebsocketClient.statusSub.unsubscribe(::newStatusCallback)
-            //ConnectionManager.sub.unsubscribe(::onConnectionChanged)
+            TextProvider.unsubscribe(::newTextCallback)
         }
     }
 

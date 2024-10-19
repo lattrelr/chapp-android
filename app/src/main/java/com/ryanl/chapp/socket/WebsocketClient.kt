@@ -30,8 +30,6 @@ object WebsocketClient {
     private const val TAG = "WebsocketClient"
     private const val SERVER_NAME = "10.0.2.2"
     private const val PORT = 30000
-    val statusSub = Subscription<suspend (StatusMessage) -> Unit, StatusMessage>("Status")
-    val textSub = Subscription<suspend (TextMessage) -> Unit, TextMessage>("Text")
     private val client = HttpClient(CIO) {
         install(WebSockets) {
             contentConverter = KotlinxWebsocketSerializationConverter(Json)
@@ -102,8 +100,8 @@ object WebsocketClient {
         try {
             val msg = Json.decodeFromString<Message>(textFrame.readText())
             when (msg.type) {
-                "text" -> textSub.notifyAll(msg as TextMessage)
-                "status" -> statusSub.notifyAll(msg as StatusMessage)
+                "text" -> TextProvider.onNewText(msg as TextMessage)
+                "status" -> StatusProvider.onNewStatus(msg as StatusMessage)
             }
         } catch (e: SerializationException) {
             Log.e(TAG, "Message issue $e")

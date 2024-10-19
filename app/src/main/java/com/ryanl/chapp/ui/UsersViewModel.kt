@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.User
+import com.ryanl.chapp.socket.StatusProvider
 import com.ryanl.chapp.socket.WebsocketClient
 import com.ryanl.chapp.socket.models.StatusMessage
 import kotlinx.coroutines.launch
@@ -31,14 +32,14 @@ class UsersViewModel : ViewModel() {
     fun enterUsersView() {
         viewModelScope.launch {
             // TODO subscribe to historian instead of websocket.
-            WebsocketClient.statusSub.subscribe(::statusCallback)
+            StatusProvider.subscribe(::statusCallback)
             fetchUsers()
         }
     }
 
     fun leaveUsersView() {
         viewModelScope.launch {
-            WebsocketClient.statusSub.unsubscribe(::statusCallback)
+            StatusProvider.unsubscribe(::statusCallback)
         }
     }
 

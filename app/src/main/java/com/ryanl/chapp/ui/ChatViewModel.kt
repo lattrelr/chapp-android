@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.persist.models.Message
 import com.ryanl.chapp.persist.Historian
+import com.ryanl.chapp.persist.HistorySyncJob
+import com.ryanl.chapp.socket.StatusProvider
+import com.ryanl.chapp.socket.TextProvider
 import com.ryanl.chapp.socket.WebsocketClient
 import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
@@ -25,24 +28,28 @@ class ChatViewModel : ViewModel() {
     var userOnline = mutableStateOf(false)
         private set
 
-    // Strategy to avoid message loss:
-    // - Subscribe first
-    // - Get the history, which will clear everything first.
-    // - History update is locked so subscribe will suspend until we finish updating.
     // - We will keep track of all msg id hashes in a set, in case we got a message
     // - While history was loading, we won't show it twice.
     // TODO remove display name var
     fun enterChatView(toUserId: String, toUserDisplayName: String) {
         viewModelScope.launch {
-            Historian.statusSub.subscribe(toUserId, ::statusCallback)
-            messageMutex.withLock {
-                messageHistory.clear()
-                Historian.textSub.subscribe(toUserId, ::textCallback)
-                Historian.addUserHistory(toUserId)
-                for (msg in Historian.getConversation(toUserId)) {
-                    messageHistory.add(msg)
-                    messageHistorySet.add(msg.id)
-                }
+            StatusProvider.subscribe(toUserId, ::statusCallback)
+            TextProvider.subscribe(toUserId, ::textCallback)
+            Historian.subscribe(toUserId) {
+                addMessagesFromHistory(toUserId)
+            }
+            if (!HistorySyncJob.addNewHistory(toUserId)) {
+                addMessagesFromHistory(toUserId)
+            }
+        }
+    }
+
+    private suspend fun addMessagesFromHistory(toUserId: String) {
+        messageMutex.withLock {
+            messageHistory.clear()
+            for (msg in Historian.getConversation(toUserId)) {
+                messageHistory.add(msg)
+                messageHistorySet.add(msg.id)
             }
         }
     }
@@ -50,8 +57,8 @@ class ChatViewModel : ViewModel() {
     fun leaveChatView(toUserId: String) {
         viewModelScope.launch {
             userOnline.value = false
-            Historian.statusSub.unsubscribe(toUserId)
-            Historian.textSub.unsubscribe(toUserId)
+            StatusProvider.unsubscribe(toUserId)
+            TextProvider.unsubscribe(toUserId)
             messageHistory.clear()
         }
     }

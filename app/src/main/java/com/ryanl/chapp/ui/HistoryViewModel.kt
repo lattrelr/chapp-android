@@ -5,8 +5,11 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ryanl.chapp.persist.Historian
+import com.ryanl.chapp.persist.StoredAppPrefs
 import com.ryanl.chapp.persist.models.History
 import com.ryanl.chapp.persist.models.Message
+import com.ryanl.chapp.socket.TextProvider
+import com.ryanl.chapp.socket.models.TextMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -29,7 +32,8 @@ class HistoryViewModel : ViewModel() {
         viewModelScope.launch {
             historyMutex.withLock {
                 historyMap.clear()
-                Historian.historySub.subscribe(::onHistoryChanged)
+                TextProvider.subscribe(::onNewMessage)
+                Historian.subscribe(::onHistoryChanged)
                 for (history in Historian.getHistories()) {
                     updateHistory(history)
                 }
@@ -39,7 +43,8 @@ class HistoryViewModel : ViewModel() {
 
     fun leaveUsersView() {
         viewModelScope.launch {
-            Historian.historySub.unsubscribe(::onHistoryChanged)
+            Historian.unsubscribe(::onHistoryChanged)
+            TextProvider.unsubscribe(::onNewMessage)
         }
     }
 
@@ -52,6 +57,17 @@ class HistoryViewModel : ViewModel() {
             lastMsg?.date
         )
         historyMap[history.id] = item
+    }
+
+    private fun onNewMessage(msg: TextMessage) {
+        viewModelScope.launch {
+            val userId = if (msg.to == StoredAppPrefs.getUserId()) msg.from else msg.to
+            historyMutex.withLock {
+                historyMap[userId]?.let { h ->
+                    historyMap[userId] = h.copy(lastMessage = msg.text, timestamp = msg.date)
+                }
+            }
+        }
     }
 
     private suspend fun onHistoryChanged(userId: String) {
