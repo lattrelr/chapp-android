@@ -35,7 +35,7 @@ fun LoginScreen(
     LaunchedEffect(Unit) {
         Log.d(tag, "Launched!")
         if (!doLogout) {
-            loginViewModel.checkForActiveSession() {
+            loginViewModel.tokenIsCached() {
                 navController.navigate("history")
             }
         } else {

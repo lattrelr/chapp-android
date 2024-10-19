@@ -14,9 +14,14 @@ import com.ryanl.chapp.socket.models.TextMessage
 import com.ryanl.chapp.util.Subscription
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.LinkedList
+import java.util.Queue
 
 /*
 This object is the source of truth for chat history.  Instead of updating the db and fetching
@@ -40,10 +45,9 @@ object Historian {
     val textSub = Subscription<String, TextMessage>("Text")
     val historySub = Subscription<suspend (String) -> Unit, String>("History")
     private lateinit var db: AppDatabase
-    private var syncJob: Job? = null
     // TODO add map of user status, and keep latest status here...(in memory database? - inMemoryDatabaseBuilder)
 
-    private suspend fun syncUserMessages(userId: String) {
+    private suspend fun syncUserMessages(userId: String): Boolean {
         var startTime: Long = 0
 
         Log.d(TAG, "Sync user messages for $userId ")
@@ -55,14 +59,19 @@ object Historian {
         }
 
         // Get the messages from the server from last msg and add to db
-        // TODO add null on failure for conversation
-        val newMessages: List<com.ryanl.chapp.api.models.Message> =
+        val newMessages: List<com.ryanl.chapp.api.models.Message>? =
             Api.getConversationAfter(StoredAppPrefs.getUserId(), userId, startTime)
+        if (newMessages == null) {
+            Log.e(TAG, "Failed to sync messages for $userId")
+            return false
+        }
+
         for (msg in newMessages) {
             addMsgHistory(Message(msg))
         }
 
         Log.d(TAG, "Done sync user messages for $userId ")
+        return true
     }
 
     private suspend fun syncUserData(userId: String): Boolean {
@@ -79,85 +88,68 @@ object Historian {
         }
 
         // Fetch web data for the user
-        val userData = Api.getUser(userId)
-        userData?.let { u ->
-            if (userHistory.displayname != u.displayname) {
-                changed = true
-                userHistory.displayname = u.displayname
-            }
-
-            if (userHistory.username != u.username) {
-                changed = true
-                userHistory.username = u.username
-            }
-
-            // TODO handle u.online
-
-            if (insert) {
-                try {
-                    db.historyDao().insert(userHistory)
-                } catch (e: SQLiteConstraintException) {
-                    // TODO shouldn't get here, maybe return false
-                    Log.d(TAG, "User $userId already in history!")
-                }
-            } else if (changed) {
-                db.historyDao().update(userHistory)
-            }
-
-            Log.d(TAG, "Sync user data done for $userId OK")
-            return true
-        }
-
-        // We were unable to get user data from the web so nothing to sync
-        Log.d(TAG, "Sync user data done for $userId FAILED")
-        return false
-    }
-
-    // TODO also call when app comes to foreground? Or HistoryScreen opened?
-    private suspend fun syncHistory() {
-        db.historyDao().getHistories().forEach { h ->
-            syncUserHistory(h.id)
-        }
-    }
-
-    private suspend fun syncUserHistory(userId: String) {
-        historyMutex.withLock {
-            syncUserData(userId)
-            syncUserMessages(userId)
-        }
-        notifyHistoryChanged(userId)
-    }
-
-    private suspend fun addMsgHistory(msg: com.ryanl.chapp.persist.models.Message): Boolean {
-        try {
-            db.messageDao().insert(msg)
-            return true
-        } catch (e: SQLiteConstraintException) {
-            Log.d(TAG, "Message already in history!")
+        val u = Api.getUser(userId)
+        if (u == null) {
+            // We were unable to get user data from the web so nothing to sync
+            Log.d(TAG, "Sync user data done for $userId FAILED")
             return false
         }
+
+        if (userHistory.displayname != u.displayname) {
+            changed = true
+            userHistory.displayname = u.displayname
+        }
+
+        if (userHistory.username != u.username) {
+            changed = true
+            userHistory.username = u.username
+        }
+
+        // TODO handle u.online
+
+        if (insert) {
+            try {
+                db.historyDao().insert(userHistory)
+            } catch (e: SQLiteConstraintException) {
+                // TODO shouldn't get here, maybe return false
+                Log.d(TAG, "User $userId already in history!")
+            }
+        } else if (changed) {
+            db.historyDao().update(userHistory)
+        }
+
+        Log.d(TAG, "Sync user data done for $userId OK")
+        return true
     }
 
-    suspend fun addUserHistory(userId: String): Boolean {
-        if (getHistory(userId) == null) {
-            syncUserHistory(userId)
-            return true
+    suspend fun syncUserHistory(userId: String): Boolean {
+        historyMutex.withLock {
+            if (!syncUserData(userId) ||
+                    !syncUserMessages(userId)) {
+                return false
+            }
         }
-        return false
+        notifyHistoryChanged(userId)
+        return true
+    }
+
+    private suspend fun addMsgHistory(msg: Message) {
+        try {
+            db.messageDao().insert(msg)
+        } catch (e: SQLiteConstraintException) {
+            Log.d(TAG, "Message already in history!")
+        }
     }
 
     private suspend fun newTextCallback(msg: TextMessage) {
-        // TODO if from new user, sync user and notify history changed...call in new coroutine
-        kotlinx.coroutines.MainScope().launch {
-            Log.d(TAG, "Got text $msg")
-            // Check if we already have history for this user (not including the logged in user)
-            val userId = if (msg.to == StoredAppPrefs.getUserId()) msg.from else msg.to
-            if (!addUserHistory(userId)) {
-                historyMutex.withLock {
-                    addMsgHistory(Message(msg))
-                }
-                notifyHistoryChanged(userId)
+        Log.d(TAG, "Got text $msg")
+        // Check if we already have history for this user (not including the logged in user)
+        val userId = if (msg.to == StoredAppPrefs.getUserId()) msg.from else msg.to
+        if (!HistorySyncJob.addNewHistory(userId)) {
+            historyMutex.withLock {
+                addMsgHistory(Message(msg))
             }
+            notifyHistoryChanged(userId)
         }
         // Keep out of historyMutex so we don't deadlock
         notifyNewText(msg)
@@ -185,21 +177,6 @@ object Historian {
         statusSub.notifyOne(msg.who, msg)
     }
 
-    private suspend fun onConnectionChanged(connected: Boolean) {
-        kotlinx.coroutines.MainScope().launch {
-            if (connected) {
-                syncJob?.cancelAndJoin()
-                syncJob = kotlinx.coroutines.MainScope().launch {
-                    // TODO try and if connection issue or failure try again
-                    // TODO after X seconds
-                    syncHistory()
-                }
-            } else {
-                syncJob?.cancelAndJoin()
-            }
-        }
-    }
-
     fun start(context: Context) {
         // We need to set the db not-in-a-thread since we will crash if we use it before
         // it is initialized
@@ -207,7 +184,7 @@ object Historian {
         kotlinx.coroutines.MainScope().launch {
             WebsocketClient.textSub.subscribe(::newTextCallback)
             WebsocketClient.statusSub.subscribe(::newStatusCallback)
-            ConnectionManager.sub.subscribe(::onConnectionChanged)
+            //ConnectionManager.sub.subscribe(::onConnectionChanged)
         }
     }
 
@@ -215,6 +192,7 @@ object Historian {
         kotlinx.coroutines.MainScope().launch {
             WebsocketClient.textSub.unsubscribe(::newTextCallback)
             WebsocketClient.statusSub.unsubscribe(::newStatusCallback)
+            //ConnectionManager.sub.unsubscribe(::onConnectionChanged)
         }
     }
 

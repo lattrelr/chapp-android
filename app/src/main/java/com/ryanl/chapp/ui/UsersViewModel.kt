@@ -45,15 +45,11 @@ class UsersViewModel : ViewModel() {
     private suspend fun fetchUsers() {
         statusMutex.withLock {
             userMap.clear()
-            try {
-                Api.getUsers().forEach { user ->
-                    if (user.id != StoredAppPrefs.getUserId()) {
-                        userMap[user.id] = user
-                    }
+            val users = Api.getUsers()
+            users?.forEach { user ->
+                if (user.id != StoredAppPrefs.getUserId()) {
+                    userMap[user.id] = user
                 }
-            } catch (e: Exception) {
-                // TODO we don't want to catch the cancellationException, be specific
-                Log.e(TAG, "Get Users FAILED - ${e.message}")
             }
         }
     }

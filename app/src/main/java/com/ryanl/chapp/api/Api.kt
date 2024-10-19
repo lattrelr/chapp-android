@@ -10,6 +10,7 @@ import kotlinx.serialization.json.Json
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.net.ConnectException
 
 object Api {
     private const val TAG = "Api"
@@ -38,57 +39,80 @@ object Api {
 
     suspend fun login(username: String, password: String): ResponseLogin? {
         Log.d(TAG, "Logging in...")
-        val resp = sessionsService.login(Login(username, password))
-        if (resp.isSuccessful) {
-            return resp.body()
+        try {
+            val resp = sessionsService.login(Login(username, password))
+            if (resp.isSuccessful) {
+                return resp.body()
+            }
+        }  catch (e: ConnectException) {
+            Log.e(TAG,"Failed to login")
         }
         return null
     }
 
     suspend fun checkForActiveSession(token: String): ResponseActive? {
         Log.d(TAG, "Check session...")
-        val resp = sessionsService.active("Bearer $token")
-        if (resp.isSuccessful) {
-            return resp.body()
+        try {
+            val resp = sessionsService.active("Bearer $token")
+            if (resp.isSuccessful) {
+                return resp.body()
+            }
+        }  catch (e: ConnectException) {
+            Log.e(TAG,"Failed to check session")
         }
         return null
     }
 
-    suspend fun getUsers(): List<User> {
-        // TODO check if response isSuccessful ?
+    suspend fun getUsers(): List<User>? {
         Log.d(TAG, "Getting users...")
-        val resp = usersService.getUsers()
-        if (resp.isSuccessful) {
-            return resp.body() ?: listOf()
+        try {
+            val resp = usersService.getUsers()
+            if (resp.isSuccessful) {
+                return resp.body() ?: listOf()
+            }
+        }  catch (e: ConnectException) {
+            Log.e(TAG,"Failed to get users")
         }
-        return listOf()
+        return null
     }
 
     suspend fun getUser(userId: String): User? {
         Log.d(TAG, "Getting user $userId...")
-        val resp = usersService.getUser(userId)
-        if (resp.isSuccessful) {
-            return resp.body()
+        try {
+            val resp = usersService.getUser(userId)
+            if (resp.isSuccessful) {
+                return resp.body()
+            }
+        } catch (e: ConnectException) {
+            Log.e(TAG,"Failed to getUser $userId")
         }
         return null
     }
 
-    suspend fun getConversation(user1: String, user2: String): List<Message> {
+    suspend fun getConversation(user1: String, user2: String): List<Message>? {
         Log.d(TAG, "Getting conversation...")
-        val resp = messagesService.getConversation(user1, user2)
-        if (resp.isSuccessful) {
-            return resp.body() ?: listOf()
+        try {
+            val resp = messagesService.getConversation(user1, user2)
+            if (resp.isSuccessful) {
+                return resp.body() ?: listOf()
+            }
+        } catch (e: ConnectException) {
+            Log.e(TAG,"Failed to get conversation")
         }
-        return listOf()
+        return null
     }
 
-    suspend fun getConversationAfter(user1: String, user2: String, timestamp: Long): List<Message> {
+    suspend fun getConversationAfter(user1: String, user2: String, timestamp: Long): List<Message>? {
         Log.d(TAG, "Getting conversation for $user1 $user2 after $timestamp...")
-        val resp = messagesService.getConversationAfter(user1, user2, timestamp)
-        if (resp.isSuccessful) {
-            return resp.body() ?: listOf()
+        try {
+            val resp = messagesService.getConversationAfter(user1, user2, timestamp)
+            if (resp.isSuccessful) {
+                return resp.body() ?: listOf()
+            }
+        }  catch (e: ConnectException) {
+            Log.e(TAG,"Failed to conversation")
         }
-        return listOf()
+        return null
     }
 
     /*fun getUsers(): List<User> {

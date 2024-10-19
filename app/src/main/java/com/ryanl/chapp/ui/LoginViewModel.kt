@@ -15,14 +15,8 @@ private const val TAG = "LoginViewModel"
 class LoginViewModel() : ViewModel() {
     fun doLogin(username: String, password: String, onDone: (Boolean) -> Unit) {
         viewModelScope.launch {
-            var response: ResponseLogin? = null
-
-            try {
-                response = Api.login(username, password)
-                Log.d(TAG, "Login response: $response")
-            }  catch (e: Exception) {
-                Log.e(TAG, "Login FAILED - ${e.message}")
-            }
+            val response = Api.login(username, password)
+            Log.d(TAG, "Login response: $response")
 
             response?.let {
                 // Store token and userId for later
@@ -36,6 +30,17 @@ class LoginViewModel() : ViewModel() {
         }
     }
 
+    // We'll force a logout in the AuthenticationManager
+    // when a connection is detected, assume cached
+    // credentials are valid on start so we can work
+    // offline.
+    fun tokenIsCached(onDone: (Boolean) -> Unit): Boolean {
+        return (
+            StoredAppPrefs.getToken() != "" &&
+            StoredAppPrefs.getUserId() != ""
+        )
+    }
+
     fun logout() {
         Log.e(TAG, "Logging out...")
         StoredAppPrefs.setToken("")
@@ -43,25 +48,5 @@ class LoginViewModel() : ViewModel() {
         WebsocketClient.closeSocket()
         // TODO close historian!
         // TODO wipe database !?  Don't clear userId on logout, and if it changes on login wipe db!!
-    }
-
-    fun checkForActiveSession(onDone: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            var session: ResponseActive? = null
-
-            try {
-                session = Api.checkForActiveSession(StoredAppPrefs.getToken())
-            } catch (e: Exception) {
-                Log.e(TAG, "Get session FAILED - ${e.message}")
-            }
-
-            session?.let {
-                if (session.userId == StoredAppPrefs.getUserId()) {
-                    Log.d(TAG, "checkForActiveSession: Session is valid for $session.userId")
-                    WebsocketClient.runForever(StoredAppPrefs.getToken())
-                    onDone(true)
-                }
-            }
-        }
     }
 }
