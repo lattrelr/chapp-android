@@ -36,11 +36,11 @@ fun LoginScreen(
     LaunchedEffect(Unit) {
         Log.d(tag, "Launched!")
         if (!doLogout) {
-            if (AuthenticationManager.tokenIsCached()) {
+            loginViewModel.checkToken() {
                 navController.navigate("history")
             }
         } else {
-            AuthenticationManager.logout()
+            loginViewModel.logout() {}
         }
     }
 

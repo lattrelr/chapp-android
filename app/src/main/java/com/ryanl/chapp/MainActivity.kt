@@ -31,8 +31,6 @@ class MainActivity : ComponentActivity() {
         StoredAppPrefs.open(applicationContext)
         // TODO stop on destroy?
         Historian.start(applicationContext)
-        // TODO delete this
-        ConnectionManager.test(true)
         setContent {
             val navController = rememberNavController()
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -40,7 +38,8 @@ class MainActivity : ComponentActivity() {
             AppNavDrawer(navController, drawerState) {
                 ChappAndroidTheme {
                     Scaffold(
-                        topBar = { TopBarNav(navController, drawerState) }
+                        topBar = { TopBarNav(navController, drawerState) },
+                        snackbarHost = {}
                     ) { innerPadding ->
                         Box(
                             modifier = Modifier

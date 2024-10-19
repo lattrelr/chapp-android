@@ -42,12 +42,7 @@ object AuthenticationManager {
     }
 
     private suspend fun checkForActiveSession(): Boolean {
-        val session = Api.checkForActiveSession(StoredAppPrefs.getToken())
-
-        if (session == null) {
-            Log.e(TAG, "Failed to authenticate session")
-            return false
-        }
+        val session = Api.checkForActiveSession(StoredAppPrefs.getToken()) ?: return false
 
         if (session.userId == StoredAppPrefs.getUserId()) {
             Log.d(TAG, "checkForActiveSession: Session is valid for $session.userId")
