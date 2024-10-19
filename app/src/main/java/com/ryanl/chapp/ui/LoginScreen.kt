@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.ryanl.chapp.socket.AuthenticationManager
 
 private const val tag = "LoginScreen"
 
@@ -35,11 +36,11 @@ fun LoginScreen(
     LaunchedEffect(Unit) {
         Log.d(tag, "Launched!")
         if (!doLogout) {
-            loginViewModel.tokenIsCached() {
+            if (AuthenticationManager.tokenIsCached()) {
                 navController.navigate("history")
             }
         } else {
-            loginViewModel.logout()
+            AuthenticationManager.logout()
         }
     }
 

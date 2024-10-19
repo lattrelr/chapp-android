@@ -30,7 +30,7 @@ object HistorySyncJob {
         syncJob?.cancelAndJoin()
     }
 
-    suspend fun add(userId: String) {
+    private suspend fun add(userId: String) {
         if (!syncSet.contains(userId)) {
             syncSet.add(userId)
             syncChannel.send(userId)

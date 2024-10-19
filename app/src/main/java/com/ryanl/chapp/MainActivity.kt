@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ryanl.chapp.persist.AppDatabase
 import com.ryanl.chapp.persist.Historian
 import com.ryanl.chapp.persist.StoredAppPrefs
+import com.ryanl.chapp.socket.AuthenticationManager
 import com.ryanl.chapp.socket.ConnectionManager
 import com.ryanl.chapp.ui.AppNavDrawer
 import com.ryanl.chapp.ui.AppNavigation

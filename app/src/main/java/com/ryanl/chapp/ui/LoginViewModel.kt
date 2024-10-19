@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 private const val TAG = "LoginViewModel"
 
 class LoginViewModel() : ViewModel() {
+    // TODO move this to auth manager?
     fun doLogin(username: String, password: String, onDone: (Boolean) -> Unit) {
         viewModelScope.launch {
             val response = Api.login(username, password)
@@ -28,25 +29,5 @@ class LoginViewModel() : ViewModel() {
                 onDone(true)
             }
         }
-    }
-
-    // We'll force a logout in the AuthenticationManager
-    // when a connection is detected, assume cached
-    // credentials are valid on start so we can work
-    // offline.
-    fun tokenIsCached(onDone: (Boolean) -> Unit): Boolean {
-        return (
-            StoredAppPrefs.getToken() != "" &&
-            StoredAppPrefs.getUserId() != ""
-        )
-    }
-
-    fun logout() {
-        Log.e(TAG, "Logging out...")
-        StoredAppPrefs.setToken("")
-        StoredAppPrefs.setUserId("")
-        WebsocketClient.closeSocket()
-        // TODO close historian!
-        // TODO wipe database !?  Don't clear userId on logout, and if it changes on login wipe db!!
     }
 }
