@@ -52,6 +52,7 @@ fun HistoryScreen(
 ) {
     BackHandler {
         // Do nothing, prevent logout
+        // TODO remove this and pop the screen on nav
     }
 
     DisposableEffect(Unit) {
