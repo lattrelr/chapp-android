@@ -40,5 +40,7 @@ object ErrorReporter: Subscription<String, ErrorReporter.ErrorTypes>("Errors") {
             ErrorTypes.AUTH_ERR -> { errorState.authError = false }
             ErrorTypes.SEND_FAILED -> {}
         }
+
+        notifyAll(e)
     }
 }

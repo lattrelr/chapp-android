@@ -2,6 +2,7 @@ package com.ryanl.chapp.socket
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.ryanl.chapp.ErrorReporter
 import com.ryanl.chapp.api.Api
 import com.ryanl.chapp.api.models.ResponseActive
 import com.ryanl.chapp.persist.StoredAppPrefs
@@ -49,6 +50,7 @@ object AuthenticationManager {
             WebsocketClient.runForever(StoredAppPrefs.getToken())
         } else {
             logout()
+            ErrorReporter.setError(ErrorReporter.ErrorTypes.AUTH_ERR)
             // TODO display to user somehow (overlay some message saying to click to reauth)
         }
 

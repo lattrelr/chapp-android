@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         StoredAppPrefs.open(applicationContext)
+        ConnectionManager.open(applicationContext)
         // TODO stop on destroy?
         Historian.start(applicationContext)
         setContent {
