@@ -1,6 +1,7 @@
 package com.ryanl.chapp.api
 
 import android.util.Log
+import com.ryanl.chapp.ErrorReporter
 import com.ryanl.chapp.api.models.Login
 import com.ryanl.chapp.api.models.Message
 import com.ryanl.chapp.api.models.ResponseActive
@@ -37,82 +38,48 @@ object Api {
         retrofit.create(MessagesService::class.java)
     }
 
-    suspend fun login(username: String, password: String): ResponseLogin? {
-        Log.d(TAG, "Logging in...")
+    private suspend fun <T> sendRequestWrapper (apiCall: suspend () -> Response<T>): T? {
         try {
-            val resp = sessionsService.login(Login(username, password))
+            val resp = apiCall()
             if (resp.isSuccessful) {
+                ErrorReporter.clearError(ErrorReporter.ErrorTypes.SERV_ERR)
                 return resp.body()
             }
         }  catch (e: ConnectException) {
-            Log.e(TAG,"Failed to login")
+            Log.e(TAG,"Request failed")
+            ErrorReporter.setError(ErrorReporter.ErrorTypes.SERV_ERR)
         }
         return null
+    }
+
+    suspend fun login(username: String, password: String): ResponseLogin? {
+        Log.d(TAG, "Logging in...")
+        return sendRequestWrapper { sessionsService.login(Login(username, password)) }
     }
 
     suspend fun checkForActiveSession(token: String): ResponseActive? {
         Log.d(TAG, "Check session...")
-        try {
-            val resp = sessionsService.active("Bearer $token")
-            if (resp.isSuccessful) {
-                return resp.body()
-            }
-        }  catch (e: ConnectException) {
-            Log.e(TAG,"Failed to check session")
-        }
-        return null
+        return sendRequestWrapper { sessionsService.active("Bearer $token") }
     }
 
     suspend fun getUsers(): List<User>? {
         Log.d(TAG, "Getting users...")
-        try {
-            val resp = usersService.getUsers()
-            if (resp.isSuccessful) {
-                return resp.body() ?: listOf()
-            }
-        }  catch (e: ConnectException) {
-            Log.e(TAG,"Failed to get users")
-        }
-        return null
+        return sendRequestWrapper { usersService.getUsers() }
     }
 
     suspend fun getUser(userId: String): User? {
         Log.d(TAG, "Getting user $userId...")
-        try {
-            val resp = usersService.getUser(userId)
-            if (resp.isSuccessful) {
-                return resp.body()
-            }
-        } catch (e: ConnectException) {
-            Log.e(TAG,"Failed to getUser $userId")
-        }
-        return null
+        return sendRequestWrapper { usersService.getUser(userId) }
     }
 
     suspend fun getConversation(user1: String, user2: String): List<Message>? {
         Log.d(TAG, "Getting conversation...")
-        try {
-            val resp = messagesService.getConversation(user1, user2)
-            if (resp.isSuccessful) {
-                return resp.body() ?: listOf()
-            }
-        } catch (e: ConnectException) {
-            Log.e(TAG,"Failed to get conversation")
-        }
-        return null
+        return sendRequestWrapper { messagesService.getConversation(user1, user2) }
     }
 
     suspend fun getConversationAfter(user1: String, user2: String, timestamp: Long): List<Message>? {
         Log.d(TAG, "Getting conversation for $user1 $user2 after $timestamp...")
-        try {
-            val resp = messagesService.getConversationAfter(user1, user2, timestamp)
-            if (resp.isSuccessful) {
-                return resp.body() ?: listOf()
-            }
-        }  catch (e: ConnectException) {
-            Log.e(TAG,"Failed to get conversation")
-        }
-        return null
+        return sendRequestWrapper { messagesService.getConversationAfter(user1, user2, timestamp) }
     }
 
     /*fun getUsers(): List<User> {

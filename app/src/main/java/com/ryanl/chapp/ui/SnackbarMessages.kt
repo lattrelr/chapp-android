@@ -6,27 +6,28 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun ErrorSnacks(errorViewModel: ErrorViewModel = viewModel()) {
+    val errUiState by errorViewModel.uiState.collectAsState()
+
     // TODO ErrorViewModel could handle state...somehow report
     // TODO the errorviewmodel from background tasks
     DisposableEffect(Unit) {
-        //errorViewModel.enterView()
+        errorViewModel.enterView()
         onDispose {
-            //errorViewModel.exitView()
+            errorViewModel.exitView()
         }
     }
 
-    // Errors that cross all screens ->
-    // Server not responding
-    // Need to login again / Not authenticated
-    // No internet connection
-
-    ShowServerIssues()
+    if (errUiState.serverError) {
+        ShowServerIssues()
+    }
 
     //TODO show a login screen overlay window on snackbar instead of going back to
     //TODO the main login screen
@@ -40,7 +41,7 @@ fun ShowServerIssues() {
     LaunchedEffect(Unit) {
         val result = snackbarHostState.showSnackbar(
             message = "Server not responding",
-            actionLabel = "Action",
+            //actionLabel = "Action",
             // Defaults to SnackbarDuration.Short
             duration = SnackbarDuration.Indefinite
         )
