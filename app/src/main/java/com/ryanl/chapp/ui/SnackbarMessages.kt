@@ -21,6 +21,11 @@ fun ErrorSnacks(errorViewModel: ErrorViewModel = viewModel()) {
         }
     }
 
+    // Errors that cross all screens ->
+    // Server not responding
+    // Need to login again / Not authenticated
+    // No internet connection
+
     ShowServerIssues()
 
     //TODO show a login screen overlay window on snackbar instead of going back to
