@@ -2,6 +2,7 @@ package com.ryanl.chapp.socket
 
 import android.net.http.UrlRequest.Status
 import android.util.Log
+import com.ryanl.chapp.ErrorReporter
 import com.ryanl.chapp.socket.models.Message
 import com.ryanl.chapp.socket.models.StatusMessage
 import com.ryanl.chapp.socket.models.TextMessage
@@ -108,17 +109,24 @@ object WebsocketClient {
         }
     }
 
-    suspend fun sendTextMessage(toUser: String, msgText: String) {
-        session?.sendSerialized(
-            TextMessage(
-                type = "text",
-                text = msgText,
-                to = toUser,
-                from = "",
-                _id = "",
-                date = 0,
+    suspend fun sendTextMessage(toUser: String, msgText: String, onSuccess: () -> Unit) {
+        session?.let {
+            it.sendSerialized(
+                TextMessage(
+                    type = "text",
+                    text = msgText,
+                    to = toUser,
+                    from = "",
+                    _id = "",
+                    date = 0,
+                )
             )
-        )
+            onSuccess()
+        } ?: run {
+            ErrorReporter.setError(ErrorReporter.ErrorTypes.SEND_FAILED)
+        }
+
+        // TODO need a try catch if this was closed and not just null
         Log.d(TAG, "Sent text message")
     }
 

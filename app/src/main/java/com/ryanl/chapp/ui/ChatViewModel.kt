@@ -84,8 +84,9 @@ class ChatViewModel : ViewModel() {
         Log.d(TAG, "Send message to $toUserId")
         viewModelScope.launch {
             toUserId?.let {
-                WebsocketClient.sendTextMessage(it, currentMessage.value)
-                currentMessage.value = ""
+                WebsocketClient.sendTextMessage(it, currentMessage.value) {
+                    currentMessage.value = ""
+                }
             }
         }
     }
