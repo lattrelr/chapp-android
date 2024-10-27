@@ -2,7 +2,9 @@ package com.ryanl.chapp.socket
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.LinkProperties
 import android.net.Network
+import android.net.NetworkCapabilities
 import android.util.Log
 import androidx.core.content.ContextCompat.getSystemService
 import com.ryanl.chapp.ErrorReporter
@@ -29,6 +31,7 @@ object ConnectionManager {
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             Log.e(TAG, "The default network is now: $network")
+            // TODO this doesn't mean internet...
             updateNetworkState(true)
             kotlinx.coroutines.MainScope().launch {
                 ErrorReporter.clearError(ErrorReporter.ErrorTypes.NO_INTERNET)
@@ -41,6 +44,15 @@ object ConnectionManager {
             kotlinx.coroutines.MainScope().launch {
                 ErrorReporter.setError(ErrorReporter.ErrorTypes.NO_INTERNET)
             }
+        }
+
+        // TODO use this one instead
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
